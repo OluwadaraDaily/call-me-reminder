@@ -10,9 +10,14 @@ class User(BaseModel):
 
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
 
-    # Relationship to reminders
+    # Relationships
     reminders: Mapped[list["Reminder"]] = relationship(
         "Reminder",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+    refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
+        "RefreshToken",
         back_populates="user",
         cascade="all, delete-orphan"
     )

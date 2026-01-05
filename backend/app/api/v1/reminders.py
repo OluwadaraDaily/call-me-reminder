@@ -3,8 +3,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 from typing import List
 
-from app.dependencies import get_db
+from app.dependencies import get_db, get_current_user
 from app.models.reminder import Reminder
+from app.models.user import User
 from app.schemas.reminder import ReminderCreate, ReminderUpdate, ReminderResponse
 
 router = APIRouter(prefix="/reminders", tags=["reminders"])
@@ -13,7 +14,7 @@ router = APIRouter(prefix="/reminders", tags=["reminders"])
 @router.post("/", response_model=ReminderResponse, status_code=status.HTTP_201_CREATED)
 def create_reminder(
     reminder_data: ReminderCreate,
-    user_id: int = Query(..., description="User ID (TODO: Replace with JWT auth)"),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -27,7 +28,7 @@ def create_reminder(
     """
     # Create reminder
     new_reminder = Reminder(
-        user_id=user_id,
+        user_id=current_user.id,
         title=reminder_data.title,
         message=reminder_data.message,
         phone_number=reminder_data.phone_number,
@@ -45,20 +46,20 @@ def create_reminder(
 
 @router.get("/", response_model=List[ReminderResponse])
 def list_reminders(
-    user_id: int = Query(..., description="User ID (TODO: Replace with JWT auth)"),
+    current_user: User = Depends(get_current_user),
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(100, ge=1, le=100, description="Maximum records to return"),
     db: Session = Depends(get_db)
 ):
     """
-    List all reminders for a user.
+    List all reminders for authenticated user.
 
     - **skip**: Number of records to skip (pagination)
     - **limit**: Maximum records to return (max 100)
     """
     stmt = (
         select(Reminder)
-        .where(Reminder.user_id == user_id)
+        .where(Reminder.user_id == current_user.id)
         .offset(skip)
         .limit(limit)
         .order_by(Reminder.date_time.asc())
@@ -71,13 +72,13 @@ def list_reminders(
 @router.get("/{reminder_id}", response_model=ReminderResponse)
 def get_reminder(
     reminder_id: int,
-    user_id: int = Query(..., description="User ID (TODO: Replace with JWT auth)"),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Get a specific reminder by ID."""
     stmt = select(Reminder).where(
         Reminder.id == reminder_id,
-        Reminder.user_id == user_id
+        Reminder.user_id == current_user.id
     )
     reminder = db.scalars(stmt).first()
 
@@ -94,14 +95,14 @@ def get_reminder(
 def update_reminder(
     reminder_id: int,
     reminder_data: ReminderUpdate,
-    user_id: int = Query(..., description="User ID (TODO: Replace with JWT auth)"),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Update a reminder."""
     # Fetch reminder
     stmt = select(Reminder).where(
         Reminder.id == reminder_id,
-        Reminder.user_id == user_id
+        Reminder.user_id == current_user.id
     )
     reminder = db.scalars(stmt).first()
 
@@ -125,13 +126,13 @@ def update_reminder(
 @router.delete("/{reminder_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_reminder(
     reminder_id: int,
-    user_id: int = Query(..., description="User ID (TODO: Replace with JWT auth)"),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Delete a reminder."""
     stmt = select(Reminder).where(
         Reminder.id == reminder_id,
-        Reminder.user_id == user_id
+        Reminder.user_id == current_user.id
     )
     reminder = db.scalars(stmt).first()
 

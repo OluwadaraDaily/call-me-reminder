@@ -75,3 +75,6 @@ celerybeat.pid
 
 # Mac
 .DS_Store
+
+# docs
+docs/important.txt

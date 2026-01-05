@@ -46,3 +46,6 @@ websockets==15.0.1
 sqlalchemy==2.0.36
 alembic==1.14.0
 greenlet==3.1.1
+# JWT Authentication
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
