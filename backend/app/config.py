@@ -25,6 +25,14 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
+    # Vapi Configuration
+    VAPI_API_KEY: str = ""
+    VAPI_PHONE_NUMBER_ID: str = ""
+
+    # Scheduler Configuration
+    SCHEDULER_POLL_INTERVAL_SECONDS: int = 60
+    SCHEDULER_TIMEZONE: str = "UTC"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         case_sensitive=True,

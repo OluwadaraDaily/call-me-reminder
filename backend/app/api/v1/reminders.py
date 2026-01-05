@@ -37,6 +37,9 @@ def create_reminder(
         status="scheduled"
     )
 
+    # Compute UTC datetime
+    new_reminder.set_utc_datetime(reminder_data.date_time, reminder_data.timezone)
+
     db.add(new_reminder)
     db.commit()
     db.refresh(new_reminder)
@@ -116,6 +119,10 @@ def update_reminder(
     update_data = reminder_data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(reminder, field, value)
+
+    # Recompute UTC datetime if date_time or timezone changed
+    if "date_time" in update_data or "timezone" in update_data:
+        reminder.set_utc_datetime(reminder.date_time, reminder.timezone)
 
     db.commit()
     db.refresh(reminder)
