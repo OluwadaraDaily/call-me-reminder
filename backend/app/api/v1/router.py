@@ -1,11 +1,12 @@
 from fastapi import APIRouter
-from app.api.v1 import users
+from app.api.v1 import users, reminders
 
 # Create the main API router for v1
 api_router = APIRouter()
 
 # Include sub-routers
 api_router.include_router(users.router)
+api_router.include_router(reminders.router)
 
 
 @api_router.get("/")
