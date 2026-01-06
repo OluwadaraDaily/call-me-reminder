@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
-import { useReminders, useCreateReminder } from '@/hooks/useReminders';
+import { useReminders, useCreateReminder, useUpdateReminder, useDeleteReminder } from '@/hooks/useReminders';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, Plus, Bell } from 'lucide-react';
@@ -9,7 +9,9 @@ import { RemindersTable } from '@/components/reminders-table';
 import { StatsCardSkeleton } from '@/components/skeletons/stats-card-skeleton';
 import { RemindersTableSkeleton } from '@/components/skeletons/reminders-table-skeleton';
 import { AddReminderModal } from '@/components/add-reminder-modal';
-import { ReminderCreate } from '@/types/reminder';
+import { EditReminderModal } from '@/components/edit-reminder-modal';
+import { DeleteReminderDialog } from '@/components/delete-reminder-dialog';
+import { Reminder, ReminderCreate, ReminderUpdate } from '@/types/reminder';
 import { toast } from 'sonner';
 import { useState } from 'react';
 
@@ -18,10 +20,15 @@ export default function DashboardPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedReminder, setSelectedReminder] = useState<Reminder | null>(null);
 
   const skip = (currentPage - 1) * pageSize;
   const { data: paginatedData, isLoading, error } = useReminders(skip, pageSize);
   const createReminder = useCreateReminder();
+  const updateReminder = useUpdateReminder();
+  const deleteReminder = useDeleteReminder();
 
   const reminders = paginatedData?.items || [];
   const totalCount = paginatedData?.total || 0;
@@ -45,6 +52,39 @@ export default function DashboardPage() {
     } catch (error) {
       toast.error('Failed to create reminder. Please try again.');
       throw error;
+    }
+  };
+
+  const handleEditReminder = (reminder: Reminder) => {
+    setSelectedReminder(reminder);
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateReminder = async (id: number, data: ReminderUpdate) => {
+    try {
+      await updateReminder.mutateAsync({ id, data });
+      toast.success('Reminder updated successfully!');
+    } catch (error) {
+      toast.error('Failed to update reminder. Please try again.');
+      throw error;
+    }
+  };
+
+  const handleDeleteReminder = (reminder: Reminder) => {
+    setSelectedReminder(reminder);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedReminder) return;
+
+    try {
+      await deleteReminder.mutateAsync(selectedReminder.id);
+      toast.success('Reminder deleted successfully!');
+      setIsDeleteDialogOpen(false);
+      setSelectedReminder(null);
+    } catch (error) {
+      toast.error('Failed to delete reminder. Please try again.');
     }
   };
 
@@ -164,6 +204,8 @@ export default function DashboardPage() {
             pageSize={pageSize}
             onPageChange={handlePageChange}
             onPageSizeChange={handlePageSizeChange}
+            onEdit={handleEditReminder}
+            onDelete={handleDeleteReminder}
           />
         </div>
       )}
@@ -172,6 +214,21 @@ export default function DashboardPage() {
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
         onSubmit={handleCreateReminder}
+      />
+
+      <EditReminderModal
+        open={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
+        reminder={selectedReminder}
+        onSubmit={handleUpdateReminder}
+      />
+
+      <DeleteReminderDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        reminder={selectedReminder}
+        onConfirm={handleConfirmDelete}
+        isDeleting={deleteReminder.isPending}
       />
     </div>
   );

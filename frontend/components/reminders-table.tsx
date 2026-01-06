@@ -20,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Clock, Phone, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Clock, Phone, ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -50,7 +50,12 @@ function getTimeRemaining(dateTimeStr: string): string {
   return formatDistanceToNow(date, { addSuffix: true });
 }
 
-const columns: ColumnDef<Reminder>[] = [
+interface ColumnsProps {
+  onEdit: (reminder: Reminder) => void;
+  onDelete: (reminder: Reminder) => void;
+}
+
+const createColumns = ({ onEdit, onDelete }: ColumnsProps): ColumnDef<Reminder>[] => [
   {
     accessorKey: 'title',
     header: 'Title',
@@ -95,6 +100,33 @@ const columns: ColumnDef<Reminder>[] = [
       return <StatusBadge status={status} />;
     },
   },
+  {
+    id: 'actions',
+    header: 'Actions',
+    cell: ({ row }) => {
+      const reminder = row.original;
+      return (
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onEdit(reminder)}
+            className="h-8 w-8 p-0"
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onDelete(reminder)}
+            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      );
+    },
+  },
 ];
 
 interface RemindersTableProps {
@@ -104,6 +136,8 @@ interface RemindersTableProps {
   pageSize?: number;
   onPageChange?: (page: number) => void;
   onPageSizeChange?: (pageSize: number) => void;
+  onEdit: (reminder: Reminder) => void;
+  onDelete: (reminder: Reminder) => void;
 }
 
 export function RemindersTable({
@@ -113,6 +147,8 @@ export function RemindersTable({
   pageSize = 10,
   onPageChange,
   onPageSizeChange,
+  onEdit,
+  onDelete,
 }: RemindersTableProps) {
   const [sorting, setSorting] = useState<SortingState>([
     {
@@ -120,6 +156,8 @@ export function RemindersTable({
       desc: false, // Ascending to show soonest first
     },
   ]);
+
+  const columns = createColumns({ onEdit, onDelete });
 
   const table = useReactTable({
     data: reminders,
