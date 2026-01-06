@@ -37,9 +37,6 @@ export function Navbar() {
           <div className="hidden md:flex md:items-center md:space-x-4">
             {isAuthenticated ? (
               <>
-                <Link href="/dashboard">
-                  <Button variant="ghost">Dashboard</Button>
-                </Link>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="flex items-center space-x-2">
@@ -47,13 +44,7 @@ export function Navbar() {
                       <span className="max-w-[150px] truncate">{user?.email}</span>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link href="/dashboard">Dashboard</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
+                  <DropdownMenuContent align="end" className="w-36">
                     <DropdownMenuItem onClick={logout} className="text-red-600">
                       Log out
                     </DropdownMenuItem>
