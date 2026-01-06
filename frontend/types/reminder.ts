@@ -29,3 +29,10 @@ export interface ReminderUpdate {
   timezone?: string;
   status?: ReminderStatus;
 }
+
+export interface PaginatedRemindersResponse {
+  items: Reminder[];
+  total: number;
+  skip: number;
+  limit: number;
+}

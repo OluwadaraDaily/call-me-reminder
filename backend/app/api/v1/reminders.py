@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import select, func
 from typing import List
 
 from app.dependencies import get_db, get_current_user
 from app.models.reminder import Reminder
 from app.models.user import User
-from app.schemas.reminder import ReminderCreate, ReminderUpdate, ReminderResponse
+from app.schemas.reminder import ReminderCreate, ReminderUpdate, ReminderResponse, PaginatedResponse
 
 router = APIRouter(prefix="/reminders", tags=["reminders"])
 
@@ -47,7 +47,7 @@ def create_reminder(
     return new_reminder
 
 
-@router.get("/", response_model=List[ReminderResponse])
+@router.get("/", response_model=PaginatedResponse[ReminderResponse])
 def list_reminders(
     current_user: User = Depends(get_current_user),
     skip: int = Query(0, ge=0, description="Number of records to skip"),
@@ -60,6 +60,15 @@ def list_reminders(
     - **skip**: Number of records to skip (pagination)
     - **limit**: Maximum records to return (max 100)
     """
+    # Get total count
+    count_stmt = (
+        select(func.count())
+        .select_from(Reminder)
+        .where(Reminder.user_id == current_user.id)
+    )
+    total = db.scalar(count_stmt) or 0
+
+    # Get paginated reminders
     stmt = (
         select(Reminder)
         .where(Reminder.user_id == current_user.id)
@@ -69,7 +78,12 @@ def list_reminders(
     )
     reminders = list(db.scalars(stmt).all())
 
-    return reminders
+    return PaginatedResponse(
+        items=reminders,
+        total=total,
+        skip=skip,
+        limit=limit
+    )
 
 
 @router.get("/{reminder_id}", response_model=ReminderResponse)

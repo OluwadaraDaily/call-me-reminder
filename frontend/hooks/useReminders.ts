@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 import { API_ENDPOINTS } from '@/lib/constants';
-import { Reminder, ReminderCreate, ReminderUpdate } from '@/types/reminder';
+import { Reminder, ReminderCreate, ReminderUpdate, PaginatedRemindersResponse } from '@/types/reminder';
 
 const QUERY_KEYS = {
   reminders: ['reminders'] as const,
@@ -12,7 +12,7 @@ export function useReminders(skip: number = 0, limit: number = 100) {
   return useQuery({
     queryKey: [...QUERY_KEYS.reminders, skip, limit],
     queryFn: async () => {
-      const response = await apiClient.get<Reminder[]>(API_ENDPOINTS.REMINDERS, {
+      const response = await apiClient.get<PaginatedRemindersResponse>(API_ENDPOINTS.REMINDERS, {
         params: { skip, limit },
       });
       return response.data;

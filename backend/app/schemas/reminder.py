@@ -1,6 +1,6 @@
 from datetime import datetime
 from pydantic import BaseModel, Field
-from typing import Literal
+from typing import Literal, List, Generic, TypeVar
 
 
 class ReminderCreate(BaseModel):
@@ -37,3 +37,14 @@ class ReminderResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+T = TypeVar('T')
+
+
+class PaginatedResponse(BaseModel, Generic[T]):
+    """Generic paginated response schema."""
+    items: List[T]
+    total: int
+    skip: int
+    limit: int
