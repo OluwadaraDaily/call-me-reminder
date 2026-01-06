@@ -2,8 +2,8 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../hooks/useAuth';
-import { Navbar } from '../components/navbar';
+import { useAuth } from '@/hooks/useAuth';
+import { Navbar } from '@/components/navbar';
 import { Loader2 } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

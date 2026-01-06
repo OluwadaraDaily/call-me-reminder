@@ -10,7 +10,7 @@ import {
 } from '@tanstack/react-table';
 import { useState } from 'react';
 import { format, formatDistanceToNow, isPast, parseISO } from 'date-fns';
-import { Reminder } from '@/app/types/reminder';
+import { Reminder } from '@/types/reminder';
 import { StatusBadge } from './status-badge';
 import {
   Table,

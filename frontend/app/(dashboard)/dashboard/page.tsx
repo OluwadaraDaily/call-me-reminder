@@ -1,11 +1,11 @@
 'use client';
 
-import { useAuth } from '@/app/hooks/useAuth';
-import { useReminders } from '@/app/hooks/useReminders';
+import { useAuth } from '@/hooks/useAuth';
+import { useReminders } from '@/hooks/useReminders';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, Plus, Bell } from 'lucide-react';
-import { RemindersTable } from '@/app/components/reminders-table';
+import { RemindersTable } from '@/components/reminders-table';
 
 export default function DashboardPage() {
   const { user } = useAuth();

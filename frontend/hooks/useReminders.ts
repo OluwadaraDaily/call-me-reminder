@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import apiClient from '@/app/lib/api-client';
-import { API_ENDPOINTS } from '@/app/lib/constants';
-import { Reminder, ReminderCreate, ReminderUpdate } from '@/app/types/reminder';
+import apiClient from '@/lib/api-client';
+import { API_ENDPOINTS } from '@/lib/constants';
+import { Reminder, ReminderCreate, ReminderUpdate } from '@/types/reminder';
 
 const QUERY_KEYS = {
   reminders: ['reminders'] as const,

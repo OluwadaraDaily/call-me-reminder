@@ -1,4 +1,4 @@
-import { ReminderStatus } from '@/app/types/reminder';
+import { ReminderStatus } from '@/types/reminder';
 import { cn } from '@/lib/utils';
 
 interface StatusBadgeProps {
