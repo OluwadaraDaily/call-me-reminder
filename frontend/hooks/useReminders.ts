@@ -8,12 +8,21 @@ const QUERY_KEYS = {
   reminder: (id: number) => ['reminders', id] as const,
 };
 
-export function useReminders(skip: number = 0, limit: number = 100) {
+export function useReminders(
+  skip: number = 0,
+  limit: number = 100,
+  status?: string,
+  search?: string
+) {
   return useQuery({
-    queryKey: [...QUERY_KEYS.reminders, skip, limit],
+    queryKey: [...QUERY_KEYS.reminders, skip, limit, status, search],
     queryFn: async () => {
+      const params: Record<string, any> = { skip, limit };
+      if (status) params.status = status;
+      if (search) params.search = search;
+
       const response = await apiClient.get<PaginatedRemindersResponse>(API_ENDPOINTS.REMINDERS, {
-        params: { skip, limit },
+        params,
       });
       return response.data;
     },

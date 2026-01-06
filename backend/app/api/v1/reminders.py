@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func
-from typing import List
+from sqlalchemy import select, func, or_
+from typing import List, Optional
 
 from app.dependencies import get_db, get_current_user
-from app.models.reminder import Reminder
+from app.models.reminder import Reminder, ReminderStatus
 from app.models.user import User
 from app.schemas.reminder import ReminderCreate, ReminderUpdate, ReminderResponse, PaginatedResponse
 
@@ -52,26 +52,51 @@ def list_reminders(
     current_user: User = Depends(get_current_user),
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(100, ge=1, le=100, description="Maximum records to return"),
+    status: Optional[str] = Query(None, description="Filter by status (scheduled, completed, failed)"),
+    search: Optional[str] = Query(None, description="Search in title and message"),
     db: Session = Depends(get_db)
 ):
     """
-    List all reminders for authenticated user.
+    List all reminders for authenticated user with optional filtering.
 
     - **skip**: Number of records to skip (pagination)
     - **limit**: Maximum records to return (max 100)
+    - **status**: Filter by reminder status (optional)
+    - **search**: Search text in title and message (optional)
     """
-    # Get total count
+    # Base query with user filter
+    base_conditions = [Reminder.user_id == current_user.id]
+
+    # Add status filter if provided
+    if status:
+        if status not in [s.value for s in ReminderStatus]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid status. Must be one of: {', '.join([s.value for s in ReminderStatus])}"
+            )
+        base_conditions.append(Reminder.status == status)
+
+    # Add search filter if provided
+    if search:
+        search_pattern = f"%{search}%"
+        search_condition = or_(
+            Reminder.title.ilike(search_pattern),
+            Reminder.message.ilike(search_pattern)
+        )
+        base_conditions.append(search_condition)
+
+    # Get total count with filters
     count_stmt = (
         select(func.count())
         .select_from(Reminder)
-        .where(Reminder.user_id == current_user.id)
+        .where(*base_conditions)
     )
     total = db.scalar(count_stmt) or 0
 
-    # Get paginated reminders
+    # Get paginated reminders with filters
     stmt = (
         select(Reminder)
-        .where(Reminder.user_id == current_user.id)
+        .where(*base_conditions)
         .offset(skip)
         .limit(limit)
         .order_by(Reminder.date_time.asc())
