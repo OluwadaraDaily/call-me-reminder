@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -31,13 +31,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { ReminderCreate } from '@/types/reminder';
-import { Loader2 } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle } from 'lucide-react';
+import {
+  isValidPhoneNumber,
+  getPhoneNumberDetails,
+  detectUserCountry,
+  formatPhoneNumberE164,
+} from '@/lib/phone-validation';
+import { CountryCode } from 'libphonenumber-js';
 
 const reminderFormSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title must be 100 characters or less'),
   message: z.string().min(1, 'Message is required').max(500, 'Message must be 500 characters or less'),
-  phone_number: z.string().min(10, 'Phone number must be at least 10 digits').regex(/^[\d\s\+\-\(\)]+$/, 'Invalid phone number format'),
+  phone_number: z
+    .string()
+    .min(1, 'Phone number is required')
+    .refine((val) => isValidPhoneNumber(val), {
+      message: 'Please enter a valid phone number',
+    }),
   date_time: z.string().min(1, 'Date and time is required').refine(
     (val) => {
       const date = new Date(val);
@@ -74,6 +87,11 @@ function getDefaultTimezone(): string {
 
 export function AddReminderModal({ open, onOpenChange, onSubmit }: AddReminderModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [defaultCountry, setDefaultCountry] = useState<CountryCode>('US');
+
+  useEffect(() => {
+    detectUserCountry().then(setDefaultCountry);
+  }, []);
 
   const form = useForm<ReminderFormValues>({
     resolver: zodResolver(reminderFormSchema),
@@ -89,12 +107,12 @@ export function AddReminderModal({ open, onOpenChange, onSubmit }: AddReminderMo
   const handleSubmit = async (values: ReminderFormValues) => {
     setIsSubmitting(true);
     try {
-      // Clean phone number: remove spaces, hyphens, and parentheses, keep only + and digits
-      const cleanedPhoneNumber = values.phone_number.replace(/[\s\-\(\)]/g, '');
+      // Format phone number to E.164 format for backend
+      const formattedPhoneNumber = formatPhoneNumberE164(values.phone_number);
 
       await onSubmit({
         ...values,
-        phone_number: cleanedPhoneNumber,
+        phone_number: formattedPhoneNumber,
       });
       form.reset({
         title: '',
@@ -184,18 +202,40 @@ export function AddReminderModal({ open, onOpenChange, onSubmit }: AddReminderMo
             <FormField
               control={form.control}
               name="phone_number"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Phone Number</FormLabel>
-                  <FormControl>
-                    <Input placeholder="+1 (555) 123-4567" {...field} />
-                  </FormControl>
-                  <FormDescription>
-                    Include country code (e.g., +1 for US)
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                const isValid = field.value && isValidPhoneNumber(field.value);
+                const phoneDetails = field.value ? getPhoneNumberDetails(field.value) : null;
+
+                return (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <PhoneInput
+                          {...field}
+                          defaultCountry={defaultCountry}
+                          isValid={isValid}
+                        />
+                        {field.value && (
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                            {isValid ? (
+                              <CheckCircle className="h-4 w-4 text-green-500" />
+                            ) : (
+                              <XCircle className="h-4 w-4 text-destructive" />
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </FormControl>
+                    <FormDescription>
+                      {phoneDetails?.example
+                        ? `Format: ${phoneDetails.example}`
+                        : 'Enter your phone number with country code'}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
 
             <FormField

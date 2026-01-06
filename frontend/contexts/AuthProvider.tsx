@@ -2,6 +2,7 @@
 
 import React, { createContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import apiClient from '../lib/api-client';
 import { API_ENDPOINTS, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_BEFORE_EXPIRY_MINUTES } from '../lib/constants';
@@ -20,6 +21,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+  const queryClient = useQueryClient();
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const isAuthenticated = !!user;
@@ -202,6 +204,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (refreshIntervalRef.current) {
         clearInterval(refreshIntervalRef.current);
       }
+
+      // Invalidate all queries to prevent data leakage
+      queryClient.clear();
 
       toast.success('Successfully logged out');
       router.push('/');
