@@ -254,3 +254,7 @@ For faster testing during development:
 2. **Check Reminder Status**: In the dashboard, the reminder status will change from `scheduled` to `completed` (or `failed` if there was an error)
 
 3. **Vapi Dashboard**: View call logs at [vapi.ai/dashboard/calls](https://vapi.ai/dashboard/calls)
+
+### Loom Video
+
+The loom video showcasing a demo of this application can be seen [here](https://www.loom.com/share/8d1f2580f4ab46849ac82f9ded1bd6e4)
