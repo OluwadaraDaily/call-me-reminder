@@ -1,0 +1,106 @@
+'use client';
+
+import { useAuth } from '@/app/hooks/useAuth';
+import { useReminders } from '@/app/hooks/useReminders';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Calendar, Plus, Bell } from 'lucide-react';
+import { RemindersTable } from '@/app/components/reminders-table';
+
+export default function DashboardPage() {
+  const { user } = useAuth();
+  const { data: reminders, isLoading, error } = useReminders();
+
+  const scheduledCount = reminders?.filter(r => r.status === 'scheduled').length || 0;
+  const completedCount = reminders?.filter(r => r.status === 'completed').length || 0;
+  const totalCount = reminders?.length || 0;
+
+  return (
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-black">Dashboard</h1>
+          <p className="mt-2 text-gray-600">Welcome back, {user?.email}</p>
+        </div>
+        <Button size="lg" className="bg-black hover:bg-gray-800">
+          <Plus className="mr-2 h-5 w-5" />
+          New Reminder
+        </Button>
+      </div>
+
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Reminders</CardTitle>
+            <Bell className="h-4 w-4 text-gray-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalCount}</div>
+            <p className="text-xs text-gray-600">
+              {totalCount === 0 ? 'No reminders yet' : `${totalCount} total`}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Upcoming</CardTitle>
+            <Calendar className="h-4 w-4 text-gray-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{scheduledCount}</div>
+            <p className="text-xs text-gray-600">Scheduled reminders</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Completed</CardTitle>
+            <Bell className="h-4 w-4 text-black" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{completedCount}</div>
+            <p className="text-xs text-gray-600">Successful calls</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {isLoading ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-gray-500">Loading reminders...</p>
+          </CardContent>
+        </Card>
+      ) : error ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-red-500">Failed to load reminders. Please try again.</p>
+          </CardContent>
+        </Card>
+      ) : reminders && reminders.length > 0 ? (
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold text-gray-900">Upcoming Reminders</h2>
+          <RemindersTable reminders={reminders} />
+        </div>
+      ) : (
+        <Card className="border-dashed border-2">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gray-100">
+              <Calendar className="h-10 w-10 text-black" />
+            </div>
+            <CardTitle>No reminders yet</CardTitle>
+            <CardDescription className="mt-2">
+              Get started by creating your first reminder. Schedule a call and never miss important events again.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center pb-8">
+            <Button size="lg" className="bg-black hover:bg-gray-800">
+              <Plus className="mr-2 h-5 w-5" />
+              Create Your First Reminder
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}

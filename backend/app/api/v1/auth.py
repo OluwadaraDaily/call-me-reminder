@@ -36,8 +36,8 @@ def signup(user_data: UserCreate, db: Session = Depends(get_db)):
     db.refresh(new_user)
 
     # Generate tokens
-    access_token = create_access_token(data={"sub": new_user.id, "email": new_user.email})
-    refresh_token = create_refresh_token(data={"sub": new_user.id})
+    access_token = create_access_token(data={"sub": str(new_user.id), "email": new_user.email})
+    refresh_token = create_refresh_token(data={"sub": str(new_user.id)})
 
     # Store refresh token
     refresh_token_model = RefreshToken(token=refresh_token, user_id=new_user.id)
@@ -69,8 +69,8 @@ def login(user_data: UserLogin, db: Session = Depends(get_db)):
         )
 
     # Generate tokens
-    access_token = create_access_token(data={"sub": user.id, "email": user.email})
-    refresh_token = create_refresh_token(data={"sub": user.id})
+    access_token = create_access_token(data={"sub": str(user.id), "email": user.email})
+    refresh_token = create_refresh_token(data={"sub": str(user.id)})
 
     # Store refresh token
     refresh_token_model = RefreshToken(token=refresh_token, user_id=user.id)
@@ -123,7 +123,15 @@ def refresh_access_token(
         )
 
     # Get user
-    user_id = payload.get("sub")
+    user_id_str = payload.get("sub")
+    try:
+        user_id = int(user_id_str)
+    except (ValueError, TypeError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid user ID in token"
+        )
+
     stmt = select(User).where(User.id == user_id)
     user = db.scalars(stmt).first()
 
@@ -134,7 +142,7 @@ def refresh_access_token(
         )
 
     # Generate new access token
-    access_token = create_access_token(data={"sub": user.id, "email": user.email})
+    access_token = create_access_token(data={"sub": str(user.id), "email": user.email})
 
     return {
         "access_token": access_token,
