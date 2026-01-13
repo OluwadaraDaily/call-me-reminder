@@ -1,19 +1,12 @@
 'use client';
 
-import React, { createContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import apiClient from '../lib/api-client';
-import { API_ENDPOINTS, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_BEFORE_EXPIRY_MINUTES } from '../lib/constants';
-import {
-  getAccessToken,
-  getRefreshToken,
-  setAccessToken,
-  setRefreshToken,
-  clearTokens,
-} from '../lib/token-storage';
-import { AuthContextType, User, Token } from '../types/auth';
+import { API_ENDPOINTS } from '../lib/constants';
+import { AuthContextType, User } from '../types/auth';
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -22,54 +15,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const queryClient = useQueryClient();
-  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const isAuthenticated = !!user;
 
-  // Setup auto token refresh
-  const setupTokenRefresh = useCallback(() => {
-    if (refreshIntervalRef.current) {
-      clearInterval(refreshIntervalRef.current);
-    }
-
-    const refreshInterval = (ACCESS_TOKEN_EXPIRE_MINUTES - REFRESH_BEFORE_EXPIRY_MINUTES) * 60 * 1000;
-
-    refreshIntervalRef.current = setInterval(async () => {
-      const refreshToken = getRefreshToken();
-      if (!refreshToken) {
-        clearInterval(refreshIntervalRef.current!);
-        return;
-      }
-
-      try {
-        const response = await apiClient.post(API_ENDPOINTS.REFRESH, {
-          refresh_token: refreshToken,
-        });
-        setAccessToken(response.data.access_token);
-      } catch (error) {
-        clearTokens();
-        setUser(null);
-        router.push('/login');
-        clearInterval(refreshIntervalRef.current!);
-      }
-    }, refreshInterval);
-  }, [router]);
-
-  // On mount, check if we have a valid token and fetch user
+  // On mount, try to fetch user (httpOnly cookies sent automatically)
   useEffect(() => {
     const initAuth = async () => {
-      const accessToken = getAccessToken();
-
-      if (!accessToken) {
-        setIsLoading(false);
-        return;
-      }
-
       try {
         const response = await apiClient.get('/users/me');
         setUser(response.data);
       } catch (error) {
-        clearTokens();
         setUser(null);
       } finally {
         setIsLoading(false);
@@ -79,107 +34,68 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initAuth();
   }, []);
 
-  // Setup token refresh when authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      setupTokenRefresh();
-    }
-
-    return () => {
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-      }
-    };
-  }, [isAuthenticated, setupTokenRefresh]);
-
   const login = async (email: string, password: string, rememberMe: boolean = false) => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
+      // Login - backend sets httpOnly cookies
+      await apiClient.post(API_ENDPOINTS.LOGIN, {
+        email,
+        password,
+        remember_me: rememberMe
+      });
 
-      // Step 1: Login with email and password, get tokens
-      const response = await apiClient.post<Token>(API_ENDPOINTS.LOGIN, { email, password });
-      const { access_token, refresh_token } = response.data;
+      // Fetch user info
+      const userResponse = await apiClient.get('/users/me');
+      setUser(userResponse.data);
 
-      // Step 2: Store tokens
-      setAccessToken(access_token);
-      setRefreshToken(refresh_token, rememberMe);
-
-      // Step 3: Fetch user info
-      try {
-        const userResponse = await apiClient.get('/users/me');
-        setUser(userResponse.data);
-      } catch (error) {
-        toast.error('Something went wrong. Please try again.');
-      }
-
-      setIsLoading(false);
       toast.success('Successfully logged in!');
-      router.push('/dashboard');
     } catch (error: any) {
-      setIsLoading(false);
       const errorMessage = error.response?.data?.detail || 'Login failed. Please try again.';
       toast.error(errorMessage);
+      throw error; // Re-throw so form can handle it
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const signup = async (email: string, password: string, rememberMe: boolean = false) => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
+      // Signup - backend sets httpOnly cookies
+      await apiClient.post(API_ENDPOINTS.SIGNUP, {
+        email,
+        password,
+        remember_me: rememberMe
+      });
 
-      // Step 1: Signup with email and password, get tokens
-      const response = await apiClient.post<Token>(API_ENDPOINTS.SIGNUP, { email, password });
-      const { access_token, refresh_token } = response.data;
+      // Fetch user info
+      const userResponse = await apiClient.get('/users/me');
+      setUser(userResponse.data);
 
-      // Step 2: Store tokens
-      setAccessToken(access_token);
-      setRefreshToken(refresh_token, rememberMe);
-
-      // Step 3: Fetch user info
-      try {
-        const userResponse = await apiClient.get('/users/me');
-        setUser(userResponse.data);
-      } catch (error) {
-        setUser({
-          id: 0,
-          email: email,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
-      }
-
-      setIsLoading(false);
       toast.success('Account created successfully!');
-      router.push('/dashboard');
     } catch (error: any) {
-      setIsLoading(false);
       const errorMessage = error.response?.data?.detail || 'Signup failed. Please try again.';
       toast.error(errorMessage);
+      throw error; // Re-throw so form can handle it
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const logout = async () => {
     try {
-      const refreshToken = getRefreshToken();
-      if (refreshToken) {
-        await apiClient.post(API_ENDPOINTS.LOGOUT, {
-          refresh_token: refreshToken,
-        });
-      }
+      // Backend will clear httpOnly cookies
+      await apiClient.post(API_ENDPOINTS.LOGOUT, {});
     } catch (error) {
-      // Logout error
+      // Continue logout even if request fails
     } finally {
-      clearTokens();
       setUser(null);
-
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-      }
 
       // Invalidate all queries to prevent data leakage
       queryClient.clear();
 
       toast.success('Successfully logged out');
-      router.push('/');
+      router.replace('/');
     }
   };
 

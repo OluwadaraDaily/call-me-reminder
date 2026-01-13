@@ -1,29 +1,31 @@
 from datetime import datetime, timedelta
 import secrets
 from pathlib import Path
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
-from app.dependencies import get_db, get_current_user
+from app.dependencies import get_db, get_current_user, get_current_user_from_cookie
 from app.schemas.auth import TokenRefresh, TokenResponse, Token
 from app.schemas.user import UserCreate, UserLogin, PasswordResetRequest, PasswordResetConfirm, PasswordChange
 from app.models.refresh_token import RefreshToken
 from app.models.user import User
 from app.core.security import create_access_token, create_refresh_token, decode_token
 from app.core.password import hash_password, verify_password
+from app.core.cookies import set_auth_cookies, clear_auth_cookies, COOKIE_CONFIG
 from app.config import settings
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-@router.post("/signup", response_model=Token, status_code=status.HTTP_201_CREATED)
-def signup(user_data: UserCreate, db: Session = Depends(get_db)):
+@router.post("/signup", status_code=status.HTTP_201_CREATED)
+def signup(user_data: UserCreate, response: Response, db: Session = Depends(get_db)):
     """
-    Create a new user account and return JWT tokens.
+    Create a new user account and set httpOnly cookies.
 
     - **email**: User's email address (must be unique)
     - **password**: Password (min 8 chars, uppercase, lowercase, digit)
+    - **remember_me**: If True, refresh token persists for 7 days; if False, session cookie
     """
     # Check if user already exists
     stmt = select(User).where(User.email == user_data.email)
@@ -56,20 +58,20 @@ def signup(user_data: UserCreate, db: Session = Depends(get_db)):
     db.add(refresh_token_model)
     db.commit()
 
-    return {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "token_type": "bearer"
-    }
+    # Set httpOnly cookies
+    set_auth_cookies(response, access_token, refresh_token, user_data.remember_me)
+
+    return {"message": "Account created successfully"}
 
 
-@router.post("/login", response_model=Token)
-def login(user_data: UserLogin, db: Session = Depends(get_db)):
+@router.post("/login", status_code=status.HTTP_200_OK)
+def login(user_data: UserLogin, response: Response, db: Session = Depends(get_db)):
     """
-    Login with email and password, return JWT tokens.
+    Login with email and password, set httpOnly cookies.
 
     - **email**: User's email address
     - **password**: User's password
+    - **remember_me**: If True, refresh token persists for 7 days; if False, session cookie
     """
     # Find user by email
     stmt = select(User).where(User.email == user_data.email)
@@ -105,25 +107,35 @@ def login(user_data: UserLogin, db: Session = Depends(get_db)):
     db.add(refresh_token_model)
     db.commit()
 
-    return {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "token_type": "bearer"
-    }
+    # Set httpOnly cookies
+    set_auth_cookies(response, access_token, refresh_token, user_data.remember_me)
+
+    return {"message": "Login successful"}
 
 
-@router.post("/refresh", response_model=TokenResponse)
+@router.post("/refresh", status_code=status.HTTP_200_OK)
 def refresh_access_token(
-    token_data: TokenRefresh,
+    request: Request,
+    response: Response,
     db: Session = Depends(get_db)
 ):
     """
-    Refresh access token using refresh token.
+    Refresh access token using refresh token from httpOnly cookie.
 
-    - **refresh_token**: Valid refresh token
+    The refresh token is automatically read from the httpOnly cookie.
+    No request body needed.
     """
+    # Read refresh token from cookie
+    refresh_token = request.cookies.get("refresh_token")
+
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token not found"
+        )
+
     # Decode refresh token
-    payload = decode_token(token_data.refresh_token)
+    payload = decode_token(refresh_token)
     if payload is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -139,7 +151,7 @@ def refresh_access_token(
 
     # Check if token exists and is not revoked
     stmt = select(RefreshToken).where(
-        RefreshToken.token == token_data.refresh_token,
+        RefreshToken.token == refresh_token,
         RefreshToken.is_revoked == False
     )
     refresh_token_model = db.scalars(stmt).first()
@@ -172,33 +184,45 @@ def refresh_access_token(
     # Generate new access token
     access_token = create_access_token(data={"sub": str(user.id), "email": user.email})
 
-    return {
-        "access_token": access_token,
-        "token_type": "bearer"
-    }
+    # Update only access token cookie (refresh token stays the same)
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        **COOKIE_CONFIG["access_token"]
+    )
+
+    return {"message": "Token refreshed successfully"}
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 def logout(
-    token_data: TokenRefresh,
-    current_user: User = Depends(get_current_user),
+    request: Request,
+    response: Response,
+    current_user: User = Depends(get_current_user_from_cookie),
     db: Session = Depends(get_db)
 ):
     """
-    Logout by revoking refresh token.
+    Logout by revoking refresh token and clearing httpOnly cookies.
 
-    - **refresh_token**: Refresh token to revoke
+    The refresh token is automatically read from the httpOnly cookie.
     """
-    # Find and revoke refresh token
-    stmt = select(RefreshToken).where(
-        RefreshToken.token == token_data.refresh_token,
-        RefreshToken.user_id == current_user.id
-    )
-    refresh_token_model = db.scalars(stmt).first()
+    # Read refresh token from cookie
+    refresh_token = request.cookies.get("refresh_token")
 
-    if refresh_token_model:
-        refresh_token_model.is_revoked = True
-        db.commit()
+    if refresh_token:
+        # Find and revoke refresh token
+        stmt = select(RefreshToken).where(
+            RefreshToken.token == refresh_token,
+            RefreshToken.user_id == current_user.id
+        )
+        refresh_token_model = db.scalars(stmt).first()
+
+        if refresh_token_model:
+            refresh_token_model.is_revoked = True
+            db.commit()
+
+    # Clear httpOnly cookies
+    clear_auth_cookies(response)
 
     return None
 
@@ -299,7 +323,7 @@ def confirm_password_reset(
 @router.post("/password/change", status_code=status.HTTP_200_OK)
 def change_password(
     password_change: PasswordChange,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user_from_cookie),
     db: Session = Depends(get_db)
 ):
     """

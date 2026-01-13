@@ -6,6 +6,7 @@ class UserCreate(BaseModel):
     """Schema for user signup."""
     email: EmailStr
     password: str
+    remember_me: bool = False
 
     @field_validator('password')
     @classmethod
@@ -28,6 +29,7 @@ class UserLogin(BaseModel):
     """Schema for user login."""
     email: EmailStr
     password: str
+    remember_me: bool = False
 
 
 class PasswordResetRequest(BaseModel):

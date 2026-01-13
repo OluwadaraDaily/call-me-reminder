@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, func, or_
 from typing import List, Optional
 
-from app.dependencies import get_db, get_current_user
+from app.dependencies import get_db, get_current_user_from_cookie
 from app.models.reminder import Reminder, ReminderStatus
 from app.models.user import User
 from app.schemas.reminder import ReminderCreate, ReminderUpdate, ReminderResponse, PaginatedResponse
@@ -14,7 +14,7 @@ router = APIRouter(prefix="/reminders", tags=["reminders"])
 @router.post("/", response_model=ReminderResponse, status_code=status.HTTP_201_CREATED)
 def create_reminder(
     reminder_data: ReminderCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user_from_cookie),
     db: Session = Depends(get_db)
 ):
     """
@@ -49,7 +49,7 @@ def create_reminder(
 
 @router.get("/", response_model=PaginatedResponse[ReminderResponse])
 def list_reminders(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user_from_cookie),
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(100, ge=1, le=100, description="Maximum records to return"),
     status: Optional[str] = Query(None, description="Filter by status (scheduled, completed, failed)"),
@@ -114,7 +114,7 @@ def list_reminders(
 @router.get("/{reminder_id}", response_model=ReminderResponse)
 def get_reminder(
     reminder_id: int,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user_from_cookie),
     db: Session = Depends(get_db)
 ):
     """Get a specific reminder by ID."""
@@ -137,7 +137,7 @@ def get_reminder(
 def update_reminder(
     reminder_id: int,
     reminder_data: ReminderUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user_from_cookie),
     db: Session = Depends(get_db)
 ):
     """Update a reminder."""
@@ -172,7 +172,7 @@ def update_reminder(
 @router.delete("/{reminder_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_reminder(
     reminder_id: int,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user_from_cookie),
     db: Session = Depends(get_db)
 ):
     """Delete a reminder."""

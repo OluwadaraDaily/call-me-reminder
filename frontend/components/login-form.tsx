@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,8 +21,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2 } from 'lucide-react';
 
 export function LoginForm() {
-  const { login } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
+  const { login, isLoading } = useAuth();
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -36,12 +34,9 @@ export function LoginForm() {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      setIsLoading(true);
       await login(data.email, data.password, data.rememberMe);
     } catch (error) {
       toast.error('Something went wrong. Please try again.');
-    } finally {
-      setIsLoading(false);
     }
   };
 

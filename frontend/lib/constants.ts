@@ -12,11 +12,7 @@ export const API_ENDPOINTS = {
   REMINDERS: '/reminders',
 } as const;
 
-export const TOKEN_KEYS = {
-  ACCESS_TOKEN: 'access_token',
-  REFRESH_TOKEN: 'refresh_token',
-} as const;
-
+// Token timing constants (kept for reference)
+// Tokens are now managed via httpOnly cookies on the backend
 export const ACCESS_TOKEN_EXPIRE_MINUTES = 30;
-export const REFRESH_BEFORE_EXPIRY_MINUTES = 5;
 export const REFRESH_TOKEN_EXPIRE_DAYS = 7;
