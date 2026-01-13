@@ -37,21 +37,27 @@ export default function DashboardPage() {
   // Check if any filters are active
   const hasActiveFilters = statusFilter !== 'all' || !!searchParam;
 
-  // Get all reminders (unfiltered) to check if user has any reminders at all
-  const { data: allRemindersData } = useReminders(0, 1, undefined, undefined);
+  // Get all reminders (unfiltered) for stats calculation - omit limit to fetch all
+  const { data: allRemindersData, isLoading: isLoadingAll } = useReminders(0, undefined, undefined, undefined);
   const hasAnyReminders = (allRemindersData?.total || 0) > 0;
 
-  // Get filtered reminders
-  const { data: paginatedData, isLoading, error } = useReminders(skip, pageSize, filterStatus, searchParam);
+  // Calculate stats from ALL unfiltered reminders
+  const allReminders = allRemindersData?.items || [];
+  const totalReminderCount = allRemindersData?.total || 0;
+  const scheduledCount = allReminders.filter(r => r.status === 'scheduled').length;
+  const completedCount = allReminders.filter(r => r.status === 'completed').length;
+
+  // Get filtered reminders for the table
+  const { data: paginatedData, isLoading: isLoadingFiltered, error } = useReminders(skip, pageSize, filterStatus, searchParam);
   const createReminder = useCreateReminder();
   const updateReminder = useUpdateReminder();
   const deleteReminder = useDeleteReminder();
 
   const reminders = paginatedData?.items || [];
-  const totalCount = paginatedData?.total || 0;
+  const filteredTotalCount = paginatedData?.total || 0;
 
-  const scheduledCount = reminders.filter(r => r.status === 'scheduled').length;
-  const completedCount = reminders.filter(r => r.status === 'completed').length;
+  // Use combined loading state
+  const isLoading = isLoadingAll || isLoadingFiltered;
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -175,8 +181,8 @@ export default function DashboardPage() {
             <Bell className="h-4 w-4 text-gray-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalCount}</div>
-            <p className="text-xs text-gray-600">{totalCount === 0 ? 'No reminders yet' : `${totalCount} total`}</p>
+            <div className="text-2xl font-bold">{totalReminderCount}</div>
+            <p className="text-xs text-gray-600">{totalReminderCount === 0 ? 'No reminders yet' : `${totalReminderCount} total`}</p>
           </CardContent>
         </Card>
 
@@ -251,7 +257,7 @@ export default function DashboardPage() {
             </TabsList>
           </Tabs>
 
-          {totalCount === 0 ? (
+          {filteredTotalCount === 0 ? (
             <Card>
               <CardContent className="py-12 text-center">
                 <p className="text-gray-500">
@@ -264,7 +270,7 @@ export default function DashboardPage() {
           ) : (
             <RemindersTable
               reminders={reminders}
-              totalCount={totalCount}
+              totalCount={filteredTotalCount}
               currentPage={currentPage}
               pageSize={pageSize}
               onPageChange={handlePageChange}

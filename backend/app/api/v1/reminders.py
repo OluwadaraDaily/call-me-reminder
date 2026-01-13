@@ -51,7 +51,7 @@ def create_reminder(
 def list_reminders(
     current_user: User = Depends(get_current_user_from_cookie),
     skip: int = Query(0, ge=0, description="Number of records to skip"),
-    limit: int = Query(100, ge=1, le=100, description="Maximum records to return"),
+    limit: Optional[int] = Query(None, ge=1, le=100, description="Maximum records to return (omit to get all)"),
     status: Optional[str] = Query(None, description="Filter by status (scheduled, completed, failed)"),
     search: Optional[str] = Query(None, description="Search in title and message"),
     db: Session = Depends(get_db)
@@ -60,7 +60,7 @@ def list_reminders(
     List all reminders for authenticated user with optional filtering.
 
     - **skip**: Number of records to skip (pagination)
-    - **limit**: Maximum records to return (max 100)
+    - **limit**: Maximum records to return (max 100, omit to get all records)
     - **status**: Filter by reminder status (optional)
     - **search**: Search text in title and message (optional)
     """
@@ -98,16 +98,20 @@ def list_reminders(
         select(Reminder)
         .where(*base_conditions)
         .offset(skip)
-        .limit(limit)
         .order_by(Reminder.date_time.asc())
     )
+
+    # Only apply limit if provided
+    if limit is not None:
+        stmt = stmt.limit(limit)
+
     reminders = list(db.scalars(stmt).all())
 
     return PaginatedResponse(
         items=reminders,
         total=total,
         skip=skip,
-        limit=limit
+        limit=limit if limit is not None else total
     )
 
 

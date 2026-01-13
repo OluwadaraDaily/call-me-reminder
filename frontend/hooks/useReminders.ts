@@ -10,14 +10,15 @@ const QUERY_KEYS = {
 
 export function useReminders(
   skip: number = 0,
-  limit: number = 100,
+  limit?: number,
   status?: string,
   search?: string
 ) {
   return useQuery({
     queryKey: [...QUERY_KEYS.reminders, skip, limit, status, search],
     queryFn: async () => {
-      const params: Record<string, any> = { skip, limit };
+      const params: Record<string, any> = { skip };
+      if (limit !== undefined) params.limit = limit;
       if (status) params.status = status;
       if (search) params.search = search;
 
