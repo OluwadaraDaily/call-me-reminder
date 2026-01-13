@@ -6,7 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "cypress run --component",
+    "test:component": "cypress run --component",
+    "test:e2e": "cypress run --e2e",
+    "test:open": "cypress open",
+    "test:component:open": "cypress open --component",
+    "test:e2e:open": "cypress open --e2e"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -40,10 +46,13 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/react": "^16.3.1",
     "@types/js-cookie": "^3.0.6",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cypress": "^15.9.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
     "tailwindcss": "^4",
