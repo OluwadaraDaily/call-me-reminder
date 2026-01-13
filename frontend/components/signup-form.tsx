@@ -28,6 +28,8 @@ export function SignupForm() {
     resolver: zodResolver(signupSchema),
     defaultValues: {
       email: '',
+      password: '',
+      confirmPassword: '',
       rememberMe: false,
     },
     mode: 'onChange',
@@ -36,7 +38,7 @@ export function SignupForm() {
   const onSubmit = async (data: SignupFormData) => {
     try {
       setIsLoading(true);
-      await signup(data.email, data.rememberMe);
+      await signup(data.email, data.password, data.rememberMe);
     } catch (error) {
       console.error('Signup error:', error);
     } finally {
@@ -48,7 +50,7 @@ export function SignupForm() {
     <Card className="w-full max-w-md border-2">
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
-        <CardDescription>Enter your email to get started</CardDescription>
+        <CardDescription>Enter your email and create a password</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -64,6 +66,46 @@ export function SignupForm() {
                       type="email"
                       placeholder="name@example.com"
                       autoComplete="email"
+                      disabled={isLoading}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="password"
+                      placeholder="Create a password"
+                      autoComplete="new-password"
+                      disabled={isLoading}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="confirmPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Confirm Password</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="password"
+                      placeholder="Confirm your password"
+                      autoComplete="new-password"
                       disabled={isLoading}
                       {...field}
                     />

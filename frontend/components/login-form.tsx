@@ -28,6 +28,7 @@ export function LoginForm() {
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: '',
+      password: '',
       rememberMe: false,
     },
   });
@@ -35,7 +36,7 @@ export function LoginForm() {
   const onSubmit = async (data: LoginFormData) => {
     try {
       setIsLoading(true);
-      await login(data.email, data.rememberMe);
+      await login(data.email, data.password, data.rememberMe);
     } catch (error) {
       console.error('Login error:', error);
     } finally {
@@ -47,7 +48,7 @@ export function LoginForm() {
     <Card className="w-full max-w-md border-2">
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
-        <CardDescription>Enter your email to sign in to your account</CardDescription>
+        <CardDescription>Enter your email and password to sign in</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -71,6 +72,35 @@ export function LoginForm() {
                 </FormItem>
               )}
             />
+
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="password"
+                      placeholder="Enter your password"
+                      autoComplete="current-password"
+                      disabled={isLoading}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="flex items-center justify-end">
+              <Link
+                href="/forgot-password"
+                className="text-sm text-primary hover:underline"
+              >
+                Forgot password?
+              </Link>
+            </div>
 
             <FormField
               control={form.control}

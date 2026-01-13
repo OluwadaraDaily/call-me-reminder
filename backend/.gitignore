@@ -78,3 +78,6 @@ celerybeat.pid
 
 # docs
 docs/important.txt
+
+# Development logs
+dev_logs/

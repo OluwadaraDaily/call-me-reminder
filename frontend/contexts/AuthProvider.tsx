@@ -94,23 +94,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [isAuthenticated, setupTokenRefresh]);
 
-  const login = async (email: string, rememberMe: boolean = false) => {
+  const login = async (email: string, password: string, rememberMe: boolean = false) => {
     try {
       setIsLoading(true);
       console.log('Starting login for:', email);
 
-      // Step 1: Login and get tokens
-      const response = await apiClient.post<Token>(API_ENDPOINTS.LOGIN, { email });
+      // Step 1: Login with email and password, get tokens
+      const response = await apiClient.post<Token>(API_ENDPOINTS.LOGIN, { email, password });
       console.log('Login response:', response);
       const { access_token, refresh_token } = response.data;
-      console.log('Access token received:', access_token ? access_token.substring(0, 20) + '...' : 'missing');
-      console.log('Refresh token received:', refresh_token ? refresh_token.substring(0, 20) + '...' : 'missing');
 
       // Step 2: Store tokens
       setAccessToken(access_token);
       setRefreshToken(refresh_token, rememberMe);
-      console.log('Tokens stored');
-      console.log('Token from cookie after storing:', getAccessToken() ? getAccessToken()!.substring(0, 20) + '...' : 'missing');
 
       // Step 3: Fetch user info
       try {
@@ -118,15 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('User response:', userResponse);
         setUser(userResponse.data);
       } catch (error) {
-        // If fetching user fails, set a temporary user object
-        // This allows login to succeed and user can still access dashboard
         console.error('Failed to fetch user info:', error);
-        setUser({
-          id: 0,
-          email: email,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
       }
 
       setIsLoading(false);
@@ -135,21 +123,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       router.push('/dashboard');
     } catch (error: any) {
       setIsLoading(false);
-      console.error('Login failed:', error);
-      console.error('Error response:', error.response);
       const errorMessage = error.response?.data?.detail || 'Login failed. Please try again.';
       toast.error(errorMessage);
-      throw error;
     }
   };
 
-  const signup = async (email: string, rememberMe: boolean = false) => {
+  const signup = async (email: string, password: string, rememberMe: boolean = false) => {
     try {
       setIsLoading(true);
       console.log('Starting signup for:', email);
 
-      // Step 1: Signup and get tokens
-      const response = await apiClient.post<Token>(API_ENDPOINTS.SIGNUP, { email });
+      // Step 1: Signup with email and password, get tokens
+      const response = await apiClient.post<Token>(API_ENDPOINTS.SIGNUP, { email, password });
       console.log('Signup response:', response);
       const { access_token, refresh_token } = response.data;
 
@@ -161,7 +146,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Step 3: Fetch user info
       try {
         const userResponse = await apiClient.get('/users/me');
-        console.log('User response:', userResponse);
         setUser(userResponse.data);
       } catch (error) {
         console.error('Failed to fetch user info:', error);
@@ -183,7 +167,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Error response:', error.response);
       const errorMessage = error.response?.data?.detail || 'Signup failed. Please try again.';
       toast.error(errorMessage);
-      throw error;
     }
   };
 
@@ -213,6 +196,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const requestPasswordReset = async (email: string) => {
+    try {
+      await apiClient.post(API_ENDPOINTS.PASSWORD_RESET_REQUEST, { email });
+      toast.success('Password reset instructions sent to your email');
+    } catch (error: any) {
+      console.error('Password reset request failed:', error);
+      toast.error('Failed to send reset instructions');
+    }
+  };
+
+  const confirmPasswordReset = async (token: string, newPassword: string) => {
+    try {
+      await apiClient.post(API_ENDPOINTS.PASSWORD_RESET_CONFIRM, {
+        reset_token: token,
+        new_password: newPassword,
+      });
+      toast.success('Password reset successful!');
+    } catch (error: any) {
+      console.error('Password reset confirmation failed:', error);
+      const errorMessage = error.response?.data?.detail || 'Password reset failed';
+      toast.error(errorMessage);
+    }
+  };
+
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    try {
+      await apiClient.post(API_ENDPOINTS.PASSWORD_CHANGE, {
+        current_password: currentPassword,
+        new_password: newPassword,
+      });
+      toast.success('Password changed successfully!');
+    } catch (error: any) {
+      console.error('Password change failed:', error);
+      const errorMessage = error.response?.data?.detail || 'Password change failed';
+      toast.error(errorMessage);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -222,6 +243,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         signup,
         logout,
+        requestPasswordReset,
+        confirmPasswordReset,
+        changePassword,
       }}
     >
       {children}

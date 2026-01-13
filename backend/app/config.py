@@ -33,6 +33,15 @@ class Settings(BaseSettings):
     SCHEDULER_POLL_INTERVAL_SECONDS: int = 60
     SCHEDULER_TIMEZONE: str = "UTC"
 
+    # Email Configuration (for password resets)
+    EMAIL_FROM: str = "noreply@callmereminder.com"
+    EMAIL_FROM_NAME: str = "Call Me Reminder"
+    SENDGRID_API_KEY: str = ""  # For production email sending
+
+    # Password Reset Configuration
+    PASSWORD_RESET_TOKEN_EXPIRE_HOURS: int = 1
+    FRONTEND_URL: str = "http://localhost:3000"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         case_sensitive=True,
