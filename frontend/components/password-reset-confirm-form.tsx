@@ -55,7 +55,6 @@ export function PasswordResetConfirmForm() {
         router.push('/login');
       }, 1500);
     } catch (error: any) {
-      console.error('Password reset confirmation error:', error);
       setError(error.response?.data?.detail || 'Password reset failed. The link may have expired.');
     } finally {
       setIsLoading(false);

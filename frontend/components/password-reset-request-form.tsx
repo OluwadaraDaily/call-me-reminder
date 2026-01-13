@@ -8,6 +8,7 @@ import { useAuth } from '../hooks/useAuth';
 import { passwordResetRequestSchema, PasswordResetRequestFormData } from '../lib/validation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
 import {
   Form,
   FormControl,
@@ -37,7 +38,7 @@ export function PasswordResetRequestForm() {
       await requestPasswordReset(data.email);
       setSubmitted(true);
     } catch (error) {
-      console.error('Password reset request error:', error);
+      toast.error('Something went wrong. Please try again.');
     } finally {
       setIsLoading(false);
     }

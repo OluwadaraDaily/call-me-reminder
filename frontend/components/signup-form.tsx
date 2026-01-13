@@ -9,6 +9,7 @@ import { signupSchema, SignupFormData } from '../lib/validation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { toast } from 'sonner';
 import {
   Form,
   FormControl,
@@ -40,7 +41,7 @@ export function SignupForm() {
       setIsLoading(true);
       await signup(data.email, data.password, data.rememberMe);
     } catch (error) {
-      console.error('Signup error:', error);
+      toast.error('Something went wrong. Please try again.');
     } finally {
       setIsLoading(false);
     }

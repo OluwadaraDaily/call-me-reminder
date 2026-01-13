@@ -35,6 +35,7 @@ import { PhoneInput } from '@/components/ui/phone-input';
 import { Reminder, ReminderUpdate } from '@/types/reminder';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 import {
   isValidPhoneNumber,
   getPhoneNumberDetails,
@@ -133,7 +134,7 @@ export function EditReminderModal({ open, onOpenChange, reminder, onSubmit }: Ed
       });
       onOpenChange(false);
     } catch (error) {
-      console.error('Failed to update reminder:', error);
+      toast.error('Failed to update reminder. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

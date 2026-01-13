@@ -29,10 +29,8 @@ const apiClient: AxiosInstance = axios.create({
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = getAccessToken();
-    console.log('Request interceptor - URL:', config.url, 'Token:', token ? token.substring(0, 20) + '...' : 'missing');
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log('Authorization header set:', config.headers.Authorization.substring(0, 30) + '...');
     }
     return config;
   },

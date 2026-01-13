@@ -34,6 +34,7 @@ import {
 import { PhoneInput } from '@/components/ui/phone-input';
 import { ReminderCreate } from '@/types/reminder';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   isValidPhoneNumber,
   getPhoneNumberDetails,
@@ -123,7 +124,7 @@ export function AddReminderModal({ open, onOpenChange, onSubmit }: AddReminderMo
       });
       onOpenChange(false);
     } catch (error) {
-      console.error('Failed to create reminder:', error);
+      toast.error('Failed to create reminder. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
