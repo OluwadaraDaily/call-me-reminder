@@ -20,7 +20,7 @@ const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
         flags={flags}
         defaultCountry={defaultCountry}
         value={value}
-        onChange={onChange}
+        onChange={onChange as any}
         international
         countryCallingCodeEditable={false}
         className={cn('phone-input-wrapper', className)}
