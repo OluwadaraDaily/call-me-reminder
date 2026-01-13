@@ -6,7 +6,7 @@ from typing import List, Optional
 from app.dependencies import get_db, get_current_user_from_cookie
 from app.models.reminder import Reminder, ReminderStatus
 from app.models.user import User
-from app.schemas.reminder import ReminderCreate, ReminderUpdate, ReminderResponse, PaginatedResponse
+from app.schemas.reminder import ReminderCreate, ReminderUpdate, ReminderResponse, PaginatedResponse, ReminderStatsResponse
 
 router = APIRouter(prefix="/reminders", tags=["reminders"])
 
@@ -112,6 +112,59 @@ def list_reminders(
         total=total,
         skip=skip,
         limit=limit if limit is not None else total
+    )
+
+
+@router.get("/stats", response_model=ReminderStatsResponse)
+def get_reminder_stats(
+    current_user: User = Depends(get_current_user_from_cookie),
+    db: Session = Depends(get_db)
+):
+    """
+    Get reminder statistics for the authenticated user.
+
+    Returns counts of reminders by status (total, scheduled, completed, failed).
+    """
+    # Base condition for user's reminders
+    base_condition = Reminder.user_id == current_user.id
+
+    # Get total count
+    total_stmt = (
+        select(func.count())
+        .select_from(Reminder)
+        .where(base_condition)
+    )
+    total = db.scalar(total_stmt) or 0
+
+    # Get scheduled count
+    scheduled_stmt = (
+        select(func.count())
+        .select_from(Reminder)
+        .where(base_condition, Reminder.status == ReminderStatus.SCHEDULED.value)
+    )
+    scheduled = db.scalar(scheduled_stmt) or 0
+
+    # Get completed count
+    completed_stmt = (
+        select(func.count())
+        .select_from(Reminder)
+        .where(base_condition, Reminder.status == ReminderStatus.COMPLETED.value)
+    )
+    completed = db.scalar(completed_stmt) or 0
+
+    # Get failed count
+    failed_stmt = (
+        select(func.count())
+        .select_from(Reminder)
+        .where(base_condition, Reminder.status == ReminderStatus.FAILED.value)
+    )
+    failed = db.scalar(failed_stmt) or 0
+
+    return ReminderStatsResponse(
+        total=total,
+        scheduled=scheduled,
+        completed=completed,
+        failed=failed
     )
 
 

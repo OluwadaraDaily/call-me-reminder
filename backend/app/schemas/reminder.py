@@ -68,6 +68,14 @@ class ReminderResponse(BaseModel):
         from_attributes = True
 
 
+class ReminderStatsResponse(BaseModel):
+    """Schema for reminder statistics."""
+    total: int = Field(..., description="Total number of reminders")
+    scheduled: int = Field(..., description="Number of scheduled reminders")
+    completed: int = Field(..., description="Number of completed reminders")
+    failed: int = Field(..., description="Number of failed reminders")
+
+
 T = TypeVar('T')
 
 

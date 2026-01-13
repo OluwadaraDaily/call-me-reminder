@@ -36,3 +36,10 @@ export interface PaginatedRemindersResponse {
   skip: number;
   limit: number;
 }
+
+export interface ReminderStats {
+  total: number;
+  scheduled: number;
+  completed: number;
+  failed: number;
+}

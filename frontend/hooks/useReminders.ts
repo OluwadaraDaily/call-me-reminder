@@ -1,11 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 import { API_ENDPOINTS } from '@/lib/constants';
-import { Reminder, ReminderCreate, ReminderUpdate, PaginatedRemindersResponse } from '@/types/reminder';
+import { Reminder, ReminderCreate, ReminderUpdate, PaginatedRemindersResponse, ReminderStats } from '@/types/reminder';
 
 const QUERY_KEYS = {
   reminders: ['reminders'] as const,
   reminder: (id: number) => ['reminders', id] as const,
+  stats: ['reminders', 'stats'] as const,
 };
 
 export function useReminders(
@@ -41,6 +42,16 @@ export function useReminder(id: number) {
   });
 }
 
+export function useReminderStats() {
+  return useQuery({
+    queryKey: QUERY_KEYS.stats,
+    queryFn: async () => {
+      const response = await apiClient.get<ReminderStats>(`${API_ENDPOINTS.REMINDERS}/stats`);
+      return response.data;
+    },
+  });
+}
+
 export function useCreateReminder() {
   const queryClient = useQueryClient();
 
@@ -51,6 +62,7 @@ export function useCreateReminder() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.reminders });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.stats });
     },
   });
 }
@@ -66,6 +78,7 @@ export function useUpdateReminder() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.reminders });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.reminder(data.id) });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.stats });
     },
   });
 }
@@ -79,6 +92,7 @@ export function useDeleteReminder() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.reminders });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.stats });
     },
   });
 }

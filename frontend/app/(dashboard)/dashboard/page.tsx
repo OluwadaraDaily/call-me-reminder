@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
-import { useReminders, useCreateReminder, useUpdateReminder, useDeleteReminder } from '@/hooks/useReminders';
+import { useReminders, useReminderStats, useCreateReminder, useUpdateReminder, useDeleteReminder } from '@/hooks/useReminders';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,15 +37,12 @@ export default function DashboardPage() {
   // Check if any filters are active
   const hasActiveFilters = statusFilter !== 'all' || !!searchParam;
 
-  // Get all reminders (unfiltered) for stats calculation - omit limit to fetch all
-  const { data: allRemindersData, isLoading: isLoadingAll } = useReminders(0, undefined, undefined, undefined);
-  const hasAnyReminders = (allRemindersData?.total || 0) > 0;
-
-  // Calculate stats from ALL unfiltered reminders
-  const allReminders = allRemindersData?.items || [];
-  const totalReminderCount = allRemindersData?.total || 0;
-  const scheduledCount = allReminders.filter(r => r.status === 'scheduled').length;
-  const completedCount = allReminders.filter(r => r.status === 'completed').length;
+  // Get stats from dedicated endpoint
+  const { data: stats, isLoading: isLoadingStats } = useReminderStats();
+  const totalReminderCount = stats?.total || 0;
+  const scheduledCount = stats?.scheduled || 0;
+  const completedCount = stats?.completed || 0;
+  const hasAnyReminders = totalReminderCount > 0;
 
   // Get filtered reminders for the table
   const { data: paginatedData, isLoading: isLoadingFiltered, error } = useReminders(skip, pageSize, filterStatus, searchParam);
@@ -57,7 +54,7 @@ export default function DashboardPage() {
   const filteredTotalCount = paginatedData?.total || 0;
 
   // Use combined loading state
-  const isLoading = isLoadingAll || isLoadingFiltered;
+  const isLoading = isLoadingStats || isLoadingFiltered;
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
