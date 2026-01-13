@@ -1,7 +1,9 @@
 from sqlalchemy import String, Text, DateTime, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 import enum
+import re
 from app.models.base import BaseModel
 
 
@@ -29,7 +31,7 @@ class Reminder(BaseModel):
     message: Mapped[str] = mapped_column(Text, nullable=False)
     phone_number: Mapped[str] = mapped_column(String(20), nullable=False)
     date_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    timezone: Mapped[str] = mapped_column(String(10), nullable=False)  # e.g., "UTC+1", "UTC-7"
+    timezone: Mapped[str] = mapped_column(String(100), nullable=False)  # IANA timezone identifier e.g., "America/New_York"
     date_time_utc: Mapped[datetime | None] = mapped_column(
         DateTime,
         nullable=True,
@@ -44,18 +46,45 @@ class Reminder(BaseModel):
     # Relationship
     user: Mapped["User"] = relationship("User", back_populates="reminders")
 
-    def set_utc_datetime(self, local_dt: datetime, tz_offset: str) -> None:
+    def set_utc_datetime(self, local_dt: datetime, tz_identifier: str) -> None:
         """
         Convert local datetime to UTC and store in date_time_utc.
 
         Args:
             local_dt: datetime in user's local timezone (naive)
-            tz_offset: string like "UTC-5" or "UTC+1"
+            tz_identifier: IANA timezone identifier (e.g., "America/New_York", "Asia/Kolkata")
+                          or legacy UTC offset format (e.g., "UTC-5", "UTC+5:30")
         """
-        # Parse offset: "UTC-5" -> -5 hours
-        offset_hours = int(tz_offset.replace("UTC", ""))
-        # Convert to UTC by subtracting the offset
-        self.date_time_utc = local_dt - timedelta(hours=offset_hours)
+        # Handle legacy UTC±X format for backward compatibility
+        if tz_identifier.startswith('UTC'):
+            offset_str = tz_identifier.replace('UTC', '')
+
+            if not offset_str or offset_str == '+0' or offset_str == '-0':
+                # UTC with no offset
+                self.date_time_utc = local_dt
+                return
+
+            # Parse UTC±X or UTC±X:XX format
+            match = re.match(r'^([+-])?(\d{1,2})(?::(\d{2}))?$', offset_str)
+            if match:
+                sign = -1 if match.group(1) == '-' else 1
+                hours = int(match.group(2))
+                minutes = int(match.group(3) or 0)
+                total_minutes = sign * (hours * 60 + minutes)
+                self.date_time_utc = local_dt - timedelta(minutes=total_minutes)
+                return
+            else:
+                raise ValueError(f"Invalid UTC offset format: {tz_identifier}")
+
+        # Handle IANA timezone identifier
+        try:
+            tz = ZoneInfo(tz_identifier)
+            # Localize the naive datetime to the user's timezone
+            localized_dt = local_dt.replace(tzinfo=tz)
+            # Convert to UTC
+            self.date_time_utc = localized_dt.astimezone(ZoneInfo('UTC')).replace(tzinfo=None)
+        except Exception as e:
+            raise ValueError(f"Invalid timezone identifier: {tz_identifier}") from e
 
     def __repr__(self) -> str:
         return f"<Reminder(id={self.id}, title='{self.title}', status='{self.status}')>"

@@ -1,6 +1,7 @@
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Literal, List, Generic, TypeVar
+from zoneinfo import ZoneInfo, available_timezones
 
 
 class ReminderCreate(BaseModel):
@@ -9,7 +10,20 @@ class ReminderCreate(BaseModel):
     message: str = Field(..., min_length=1)
     phone_number: str = Field(..., pattern=r'^\+\d{10,15}$')
     date_time: datetime
-    timezone: str = Field(..., pattern=r'^UTC[+-]\d{1,2}$')  # e.g., UTC+1, UTC-7
+    timezone: str = Field(..., min_length=1, max_length=100)  # IANA timezone identifier e.g., "America/New_York", "Asia/Kolkata"
+
+    @field_validator('timezone')
+    @classmethod
+    def validate_timezone(cls, v: str) -> str:
+        """Validate that the timezone is a valid IANA timezone identifier."""
+        # Also support legacy UTC±X format for backward compatibility
+        if v.startswith('UTC'):
+            # Allow UTC, UTC+X, UTC-X formats (legacy support)
+            return v
+
+        if v not in available_timezones():
+            raise ValueError(f"Invalid timezone identifier: {v}. Must be a valid IANA timezone (e.g., 'America/New_York', 'Asia/Kolkata')")
+        return v
 
 
 class ReminderUpdate(BaseModel):
@@ -18,8 +32,23 @@ class ReminderUpdate(BaseModel):
     message: str | None = Field(None, min_length=1)
     phone_number: str | None = Field(None, pattern=r'^\+\d{10,15}$')
     date_time: datetime | None = None
-    timezone: str | None = Field(None, pattern=r'^UTC[+-]\d{1,2}$')
+    timezone: str | None = Field(None, min_length=1, max_length=100)
     status: Literal["scheduled", "completed", "failed"] | None = None
+
+    @field_validator('timezone')
+    @classmethod
+    def validate_timezone(cls, v: str | None) -> str | None:
+        """Validate that the timezone is a valid IANA timezone identifier."""
+        if v is None:
+            return v
+
+        # Also support legacy UTC±X format for backward compatibility
+        if v.startswith('UTC'):
+            return v
+
+        if v not in available_timezones():
+            raise ValueError(f"Invalid timezone identifier: {v}. Must be a valid IANA timezone (e.g., 'America/New_York', 'Asia/Kolkata')")
+        return v
 
 
 class ReminderResponse(BaseModel):

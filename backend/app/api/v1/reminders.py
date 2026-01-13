@@ -24,7 +24,7 @@ def create_reminder(
     - **message**: Detailed reminder message
     - **phone_number**: Phone with country code (e.g., +2348101217888)
     - **date_time**: When to send reminder (local datetime)
-    - **timezone**: UTC offset (e.g., UTC+1, UTC-7)
+    - **timezone**: IANA timezone identifier (e.g., "America/New_York", "Asia/Kolkata") or legacy UTC offset (e.g., UTC+1, UTC-7)
     """
     # Create reminder
     new_reminder = Reminder(
