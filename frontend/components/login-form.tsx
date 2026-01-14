@@ -30,13 +30,14 @@ export function LoginForm() {
       password: '',
       rememberMe: false,
     },
+    mode: 'onChange',
   });
 
   const onSubmit = async (data: LoginFormData) => {
     try {
       await login(data.email, data.password, data.rememberMe);
     } catch (error) {
-      toast.error('Something went wrong. Please try again.');
+      console.error('Error :', error);
     }
   };
 

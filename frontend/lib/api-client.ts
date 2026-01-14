@@ -1,6 +1,7 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { API_BASE_URL, API_ENDPOINTS } from './constants';
 
+const authPages = ['/login', '/signup', '/password-reset', '/forgot-password'];
 let isRefreshing = false;
 let failedQueue: Array<{
   resolve: (value?: unknown) => void;
@@ -41,7 +42,7 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
     // Don't attempt token refresh for auth endpoints
-    const isAuthEndpoint = originalRequest.url?.includes('/auth/');
+    const isAuthEndpoint = authPages.some(page => originalRequest.url?.includes(page));
 
     if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
       if (isRefreshing) {
@@ -60,28 +61,18 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // Call refresh endpoint - backend reads refresh token from httpOnly cookie
-        // No need to send refresh_token in body
         await axios.post(
           `${API_BASE_URL}${API_ENDPOINTS.REFRESH}`,
-          {}, // Empty body
+          {},
           { withCredentials: true } // Critical: send cookies
         );
-
-        // Access token has been updated in httpOnly cookie by backend
-        // No need to manually set it
         processQueue(null, null);
         isRefreshing = false;
-
-        // Retry original request - new access token cookie will be sent automatically
         return apiClient(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError as Error, null);
+        
         isRefreshing = false;
-
-        if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
-          window.location.href = '/login';
-        }
 
         return Promise.reject(refreshError);
       }

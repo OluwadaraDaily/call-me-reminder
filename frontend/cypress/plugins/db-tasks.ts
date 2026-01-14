@@ -1,8 +1,8 @@
 import sqlite3 from 'sqlite3';
-import { promisify } from 'util';
 import * as bcrypt from 'bcrypt';
 import * as path from 'path';
 
+// TODO: In production, configure backend to use a separate test database via environment variable
 const DB_PATH = path.join(__dirname, '../../../backend/data/app_test.db');
 
 // Helper to run database queries
@@ -47,7 +47,60 @@ class Database {
 
 export const dbTasks = {
   /**
+   * Initialize database schema (create tables if they don't exist)
+   */
+  async 'db:init'(): Promise<null> {
+    const db = new Database(DB_PATH);
+    try {
+      // Create users table
+      await db.run(`
+        CREATE TABLE IF NOT EXISTS users (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          email VARCHAR(255) NOT NULL UNIQUE,
+          password_hash VARCHAR(255),
+          reset_token VARCHAR(255),
+          reset_token_expires_at DATETIME,
+          created_at DATETIME NOT NULL,
+          updated_at DATETIME NOT NULL
+        )
+      `);
+
+      // Create reminders table
+      await db.run(`
+        CREATE TABLE IF NOT EXISTS reminders (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          title VARCHAR(200) NOT NULL,
+          message TEXT NOT NULL,
+          phone_number VARCHAR(20) NOT NULL,
+          date_time DATETIME NOT NULL,
+          timezone VARCHAR(100) NOT NULL,
+          date_time_utc DATETIME,
+          status VARCHAR(20) NOT NULL,
+          created_at DATETIME NOT NULL,
+          updated_at DATETIME NOT NULL,
+          FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+      `);
+
+      // Create indexes
+      await db.run('CREATE INDEX IF NOT EXISTS ix_users_email ON users (email)');
+      await db.run('CREATE INDEX IF NOT EXISTS ix_reminders_user_id ON reminders (user_id)');
+      await db.run('CREATE INDEX IF NOT EXISTS ix_reminders_date_time_utc ON reminders (date_time_utc)');
+
+      console.log('✓ Database schema initialized');
+      return null;
+    } catch (error) {
+      console.error('✗ Database initialization failed:', error);
+      throw error;
+    } finally {
+      db.close();
+    }
+  },
+
+  /**
    * Reset database - truncate all tables
+   * Note: Schema is managed by the backend, so we only clean data here
    */
   async 'db:reset'(): Promise<null> {
     const db = new Database(DB_PATH);
@@ -55,7 +108,15 @@ export const dbTasks = {
       // Delete in correct order (respecting foreign key constraints)
       await db.run('DELETE FROM reminders');
       await db.run('DELETE FROM users');
-      await db.run('DELETE FROM sqlite_sequence WHERE name IN ("users", "reminders")'); // Reset auto-increment
+      await db.run('DELETE FROM refresh_tokens');
+
+      // Reset auto-increment (only if sqlite_sequence exists)
+      try {
+        await db.run('DELETE FROM sqlite_sequence WHERE name IN ("users", "reminders", "refresh_tokens")');
+      } catch (e) {
+        // sqlite_sequence doesn't exist yet, that's fine
+      }
+
       console.log('✓ Database reset successfully');
       return null;
     } catch (error) {
@@ -77,7 +138,7 @@ export const dbTasks = {
 
       // Insert user
       await db.run(
-        'INSERT INTO users (email, hashed_password, created_at, updated_at) VALUES (?, ?, datetime("now"), datetime("now"))',
+        'INSERT INTO users (email, password_hash, created_at, updated_at) VALUES (?, ?, datetime("now"), datetime("now"))',
         [email, hashedPassword]
       );
 

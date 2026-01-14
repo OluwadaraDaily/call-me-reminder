@@ -1,10 +1,10 @@
 describe('Authentication Flow', () => {
   beforeEach(() => {
-    // Clear cookies and local storage
-    cy.clearCookies();
+    // Clear ALL cookies (including httpOnly) and local storage
+    cy.clearAllCookies();
     cy.clearLocalStorage();
 
-    // Reset database to clean state
+    // Reset database to clean state (this also deletes refresh_tokens)
     cy.task('db:reset');
 
     // Create fresh test user
@@ -55,8 +55,8 @@ describe('Authentication Flow', () => {
       cy.get('[data-testid="password-input"]').type('WrongPassword123!');
       cy.get('[data-testid="login-submit-btn"]').click();
 
-      // Should show error message
-      cy.contains(/invalid.*credentials|incorrect.*password/i).should('be.visible');
+      // Should show error message in toast
+      cy.expectToast(/invalid.*email.*password/i);
 
       // Should stay on login page
       cy.url().should('include', '/login');
@@ -67,7 +67,7 @@ describe('Authentication Flow', () => {
 
       cy.get('[data-testid="email-input"]').type('test@example.com');
       cy.get('[data-testid="password-input"]').type('TestPass123!');
-      cy.get('[data-testid="remember-me-checkbox"]').check();
+      cy.get('[data-testid="remember-me-checkbox"]').click();
       cy.get('[data-testid="login-submit-btn"]').click();
 
       // Should redirect to dashboard
@@ -91,13 +91,17 @@ describe('Authentication Flow', () => {
 
   describe('Signup', () => {
     it('should signup and auto-login new user', () => {
-      cy.visit('/signup');
+      // Visit signup page and handle stale auth state
+      cy.visitAuthPage('/signup');
+
+      // Wait for page to stabilize (AuthProvider initialization)
+      cy.get('[data-testid="signup-form"]').should('be.visible');
 
       // Fill signup form
       cy.get('[data-testid="signup-email-input"]').type('newuser@example.com');
       cy.get('[data-testid="signup-password-input"]').type('NewPass123!');
       cy.get('[data-testid="signup-confirm-password-input"]').type('NewPass123!');
-      cy.get('[data-testid="signup-remember-me-checkbox"]').check();
+      cy.get('[data-testid="signup-remember-me-checkbox"]').click();
       cy.get('[data-testid="signup-submit-btn"]').click();
 
       // Should redirect to dashboard
@@ -108,7 +112,7 @@ describe('Authentication Flow', () => {
     });
 
     it('should show error when passwords do not match', () => {
-      cy.visit('/signup');
+      cy.visitAuthPage('/signup');
 
       cy.get('[data-testid="signup-email-input"]').type('newuser@example.com');
       cy.get('[data-testid="signup-password-input"]').type('NewPass123!');
@@ -116,11 +120,11 @@ describe('Authentication Flow', () => {
       cy.get('[data-testid="signup-confirm-password-input"]').blur();
 
       // Should show password mismatch error
-      cy.contains(/passwords.*do not match|passwords.*must match/i).should('be.visible');
+      cy.contains(/passwords.*don't match|passwords.*must match/i).should('be.visible');
     });
 
     it('should show error for already registered email', () => {
-      cy.visit('/signup');
+      cy.visitAuthPage('/signup');
 
       // Try to signup with existing user email
       cy.get('[data-testid="signup-email-input"]').type('test@example.com');
@@ -128,12 +132,12 @@ describe('Authentication Flow', () => {
       cy.get('[data-testid="signup-confirm-password-input"]').type('NewPass123!');
       cy.get('[data-testid="signup-submit-btn"]').click();
 
-      // Should show error
-      cy.contains(/email.*already.*registered|user.*already.*exists/i).should('be.visible');
+      // Should show error in toast
+      cy.expectToast(/email.*already.*registered|user.*already.*exists/i);
     });
 
     it('should validate password strength requirements', () => {
-      cy.visit('/signup');
+      cy.visitAuthPage('/signup');
 
       cy.get('[data-testid="signup-email-input"]').type('newuser@example.com');
 
@@ -156,23 +160,17 @@ describe('Authentication Flow', () => {
 
   describe('Logout', () => {
     it('should logout successfully', () => {
-      // Login first
       cy.loginViaAPI('test@example.com', 'TestPass123!');
       cy.visit('/dashboard');
 
-      // Verify we're on dashboard
       cy.url().should('include', '/dashboard');
 
-      // Logout
       cy.logout();
 
-      // Should redirect to homepage
       cy.url().should('eq', Cypress.config().baseUrl + '/');
 
-      // Cookies should be cleared
       cy.getCookie('access_token').should('not.exist');
 
-      // Try to access dashboard - should redirect to login
       cy.visit('/dashboard');
       cy.url().should('include', '/login');
     });
@@ -180,15 +178,13 @@ describe('Authentication Flow', () => {
 
   describe('Protected Routes', () => {
     it('should protect dashboard route when not authenticated', () => {
-      // Clear all cookies
       cy.clearCookies();
 
-      // Try to visit dashboard
       cy.visit('/dashboard');
 
-      // Should redirect to login with return URL
       cy.url().should('include', '/login');
-      cy.url().should('include', 'from=/dashboard');
+      cy.url().should('include', `from=${encodeURIComponent('/dashboard')}`);
+
     });
 
     it('should redirect to intended page after login', () => {
@@ -200,7 +196,7 @@ describe('Authentication Flow', () => {
 
       // Should be on login page with return URL
       cy.url().should('include', '/login');
-      cy.url().should('include', 'from=/dashboard');
+      cy.url().should('include', `from=${encodeURIComponent('/dashboard')}`);
 
       // Login
       cy.get('[data-testid="email-input"]').type('test@example.com');
@@ -241,12 +237,10 @@ describe('Authentication Flow', () => {
       cy.loginViaAPI('test@example.com', 'TestPass123!');
       cy.visit('/dashboard');
 
-      // Simulate 401 error by intercepting API call
       let requestCount = 0;
       cy.intercept('GET', '/api/v1/reminders/stats', (req) => {
         requestCount++;
         if (requestCount === 1) {
-          // First request fails with 401
           req.reply({
             statusCode: 401,
             body: { detail: 'Token expired' },
@@ -311,20 +305,20 @@ describe('Authentication Flow', () => {
     it('should have link to signup from login page', () => {
       cy.visit('/login');
 
-      // Should have link to signup
-      cy.contains(/don't have an account|sign up/i).should('be.visible');
-      cy.contains(/don't have an account|sign up/i).click();
+      // Should have a link on "Sign up" text
+      cy.contains('a', /sign up/i).should('be.visible').and('have.attr', 'href', '/signup');
+      cy.contains('a', /sign up/i).click();
 
       // Should navigate to signup
       cy.url().should('include', '/signup');
     });
 
     it('should have link to login from signup page', () => {
-      cy.visit('/signup');
+      cy.visitAuthPage('/signup');
 
-      // Should have link to login
-      cy.contains(/already have an account|log in|sign in/i).should('be.visible');
-      cy.contains(/already have an account|log in|sign in/i).click();
+      // Should have a link on "Sign in" text
+      cy.contains('a', /sign in/i).should('be.visible').and('have.attr', 'href', '/login');
+      cy.contains('a', /sign in/i).click();
 
       // Should navigate to login
       cy.url().should('include', '/login');

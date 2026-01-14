@@ -31,14 +31,14 @@ export function SignupForm() {
       confirmPassword: '',
       rememberMe: false,
     },
-    mode: 'onChange',
+    mode: 'all',
   });
 
   const onSubmit = async (data: SignupFormData) => {
     try {
       await signup(data.email, data.password, data.rememberMe);
     } catch (error) {
-      toast.error('Something went wrong. Please try again.');
+      console.error('Something went wrong. Please try again.');
     }
   };
 

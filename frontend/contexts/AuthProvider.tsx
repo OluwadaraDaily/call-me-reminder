@@ -1,7 +1,6 @@
 'use client';
 
 import React, { createContext, useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import apiClient from '../lib/api-client';
@@ -13,7 +12,6 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
   const queryClient = useQueryClient();
 
   const isAuthenticated = !!user;
@@ -52,7 +50,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error: any) {
       const errorMessage = error.response?.data?.detail || 'Login failed. Please try again.';
       toast.error(errorMessage);
-      throw error; // Re-throw so form can handle it
     } finally {
       setIsLoading(false);
     }
@@ -76,7 +73,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error: any) {
       const errorMessage = error.response?.data?.detail || 'Signup failed. Please try again.';
       toast.error(errorMessage);
-      throw error; // Re-throw so form can handle it
     } finally {
       setIsLoading(false);
     }
@@ -95,7 +91,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       queryClient.clear();
 
       toast.success('Successfully logged out');
-      router.replace('/');
+
+      // Use window.location.href for immediate redirect to prevent
+      // dashboard layout useEffect from redirecting to login
+      window.location.href = '/';
     }
   };
 

@@ -3,7 +3,7 @@ import { dbTasks } from './cypress/plugins/db-tasks';
 
 export default defineConfig({
   e2e: {
-    baseUrl: 'http://localhost:3000',
+    baseUrl: 'http://localhost:3001',
     setupNodeEvents(on, config) {
       // Register database tasks
       on('task', dbTasks);

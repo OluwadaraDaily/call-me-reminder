@@ -8,6 +8,7 @@ declare global {
       loginViaAPI(email: string, password: string, rememberMe?: boolean): Chainable<void>;
       logout(): Chainable<void>;
       checkAuthenticated(): Chainable<void>;
+      visitAuthPage(url: string): Chainable<void>;
 
       // Reminder commands
       createReminderAPI(data: ReminderCreate): Chainable<number>;
@@ -19,6 +20,7 @@ declare global {
       waitForStats(): Chainable<void>;
       waitForRemindersTable(): Chainable<void>;
       getReminderRow(title: string): Chainable<JQuery<HTMLElement>>;
+      expectToast(message: string | RegExp, type?: 'success' | 'error' | 'warning' | 'info'): Chainable<void>;
     }
   }
 }
@@ -57,6 +59,9 @@ Cypress.Commands.add('loginViaAPI', (email: string, password: string, rememberMe
   cy.request({
     method: 'POST',
     url: 'http://localhost:8000/api/v1/auth/login',
+    headers: {
+      'Origin': 'http://localhost:3001',
+    },
     body: {
       email,
       password,
@@ -83,11 +88,38 @@ Cypress.Commands.add('checkAuthenticated', () => {
   cy.request({
     method: 'GET',
     url: 'http://localhost:8000/api/v1/users/me',
+    headers: {
+      'Origin': 'http://localhost:3001',
+    },
     failOnStatusCode: false,
   }).then((response) => {
     expect(response.status).to.eq(200);
     expect(response.body).to.have.property('email');
   });
+});
+
+/**
+ * Visit an auth page (login/signup) and ensure no stale auth state causes redirects
+ */
+Cypress.Commands.add('visitAuthPage', (url: string) => {
+  // Ensure all cookies are truly cleared
+  cy.clearAllCookies();
+
+  // Track whether initial auth check is complete
+  let initialAuthCheckDone = false;
+
+  // Intercept auth endpoints to prevent stale cookie issues - only for initial check
+  cy.intercept('GET', '/api/v1/users/me', (req) => {
+    if (!initialAuthCheckDone) {
+      // Strip cookies only for the initial auth check to ensure clean state
+      delete req.headers.cookie;
+      delete req.headers.Cookie;
+      initialAuthCheckDone = true;
+    }
+    req.continue();
+  }).as('authCheck');
+
+  cy.visit(url);
 });
 
 // ============================================
@@ -101,7 +133,11 @@ Cypress.Commands.add('createReminderAPI', (data: ReminderCreate) => {
   return cy.request({
     method: 'POST',
     url: 'http://localhost:8000/api/v1/reminders',
+    headers: {
+      'Origin': 'http://localhost:3001',
+    },
     body: data,
+    withCredentials: true,
   }).then((response) => {
     expect(response.status).to.eq(201);
     return response.body.id;
@@ -164,6 +200,24 @@ Cypress.Commands.add('waitForRemindersTable', () => {
  */
 Cypress.Commands.add('getReminderRow', (title: string) => {
   return cy.contains('[data-testid^="reminder-row-"]', title);
+});
+
+/**
+ * Wait for and verify a toast message appears
+ */
+Cypress.Commands.add('expectToast', (message: string | RegExp, _type?: 'success' | 'error' | 'warning' | 'info') => {
+  // Sonner renders toasts in an ol element with data-sonner-toaster attribute
+  const toastSelector = '[data-sonner-toaster]';
+
+  // Wait for the toast container to exist
+  cy.get(toastSelector, { timeout: 10000 }).should('exist');
+
+  // Check for the message in the toast
+  if (typeof message === 'string') {
+    cy.get(toastSelector).should('contain', message);
+  } else {
+    cy.get(toastSelector).contains(message).should('exist');
+  }
 });
 
 // Prevent TypeScript from reading file as legacy script

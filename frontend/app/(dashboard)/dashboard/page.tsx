@@ -120,7 +120,7 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-8">
+      <div className="space-y-8" data-testid="dashboard-loading">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-black">Dashboard</h1>
@@ -172,7 +172,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        <Card>
+        <Card data-testid="stats-card-total">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Reminders</CardTitle>
             <Bell className="h-4 w-4 text-gray-600" />
@@ -183,7 +183,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card data-testid="stats-card-upcoming">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Upcoming</CardTitle>
             <Calendar className="h-4 w-4 text-gray-600" />
@@ -194,7 +194,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card data-testid="stats-card-completed">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Completed</CardTitle>
             <Bell className="h-4 w-4 text-black" />

@@ -201,7 +201,7 @@ export function RemindersTable({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-testid="reminders-table">
       <div className="rounded-lg border border-gray-200 bg-white">
         <Table>
           <TableHeader>
