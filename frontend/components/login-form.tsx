@@ -48,7 +48,7 @@ export function LoginForm() {
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" data-testid="login-form">
             <FormField
               control={form.control}
               name="email"
@@ -61,6 +61,7 @@ export function LoginForm() {
                       placeholder="name@example.com"
                       autoComplete="email"
                       disabled={isLoading}
+                      data-testid="email-input"
                       {...field}
                     />
                   </FormControl>
@@ -81,6 +82,7 @@ export function LoginForm() {
                       placeholder="Enter your password"
                       autoComplete="current-password"
                       disabled={isLoading}
+                      data-testid="password-input"
                       {...field}
                     />
                   </FormControl>
@@ -108,6 +110,7 @@ export function LoginForm() {
                       checked={field.value}
                       onCheckedChange={field.onChange}
                       disabled={isLoading}
+                      data-testid="remember-me-checkbox"
                     />
                   </FormControl>
                   <div className="space-y-1 leading-none">
@@ -119,7 +122,7 @@ export function LoginForm() {
               )}
             />
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full" disabled={isLoading} data-testid="login-submit-btn">
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Sign in
             </Button>

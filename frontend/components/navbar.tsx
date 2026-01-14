@@ -39,13 +39,13 @@ export function Navbar() {
               <>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="flex items-center space-x-2">
+                    <Button variant="outline" className="flex items-center space-x-2" data-testid="user-dropdown">
                       <User className="h-4 w-4" />
-                      <span className="max-w-[150px] truncate">{user?.email}</span>
+                      <span className="max-w-[150px] truncate" data-testid="user-email-display">{user?.email}</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-36">
-                    <DropdownMenuItem onClick={logout} className="text-red-600">
+                    <DropdownMenuItem onClick={logout} className="text-red-600" data-testid="logout-btn">
                       Log out
                     </DropdownMenuItem>
                   </DropdownMenuContent>

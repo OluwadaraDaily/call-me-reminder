@@ -1,0 +1,32 @@
+{
+  "validReminder": {
+    "title": "Test Reminder",
+    "message": "This is a test message",
+    "phone_number": "+14155552671",
+    "date_time": "2026-12-31T10:00",
+    "timezone": "America/Los_Angeles"
+  },
+  "multipleReminders": [
+    {
+      "title": "Morning Call",
+      "message": "Wake up call",
+      "phone_number": "+14155552671",
+      "date_time": "2026-02-15T08:00",
+      "timezone": "America/New_York"
+    },
+    {
+      "title": "Afternoon Meeting",
+      "message": "Team standup",
+      "phone_number": "+442071234567",
+      "date_time": "2026-02-15T14:30",
+      "timezone": "Europe/London"
+    },
+    {
+      "title": "Evening Reminder",
+      "message": "Dinner reservation",
+      "phone_number": "+81312345678",
+      "date_time": "2026-02-15T19:00",
+      "timezone": "Asia/Tokyo"
+    }
+  ]
+}

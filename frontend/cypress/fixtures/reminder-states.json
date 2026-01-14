@@ -1,0 +1,26 @@
+{
+  "scheduled": {
+    "title": "Scheduled Reminder",
+    "message": "Future call scheduled",
+    "phone_number": "+14155552671",
+    "date_time": "2026-12-31T10:00",
+    "timezone": "America/Los_Angeles",
+    "status": "scheduled"
+  },
+  "completed": {
+    "title": "Completed Reminder",
+    "message": "Call was successful",
+    "phone_number": "+14155552672",
+    "date_time": "2025-01-01T10:00",
+    "timezone": "America/Los_Angeles",
+    "status": "completed"
+  },
+  "failed": {
+    "title": "Failed Reminder",
+    "message": "Call failed to connect",
+    "phone_number": "+14155552673",
+    "date_time": "2025-01-02T10:00",
+    "timezone": "America/Los_Angeles",
+    "status": "failed"
+  }
+}

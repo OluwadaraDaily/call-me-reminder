@@ -20,7 +20,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex h-screen items-center justify-center" data-testid="dashboard-loading">
         <Loader2 className="h-8 w-8 animate-spin text-black" />
       </div>
     );

@@ -50,7 +50,7 @@ export function SignupForm() {
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" data-testid="signup-form">
             <FormField
               control={form.control}
               name="email"
@@ -63,6 +63,7 @@ export function SignupForm() {
                       placeholder="name@example.com"
                       autoComplete="email"
                       disabled={isLoading}
+                      data-testid="signup-email-input"
                       {...field}
                     />
                   </FormControl>
@@ -83,6 +84,7 @@ export function SignupForm() {
                       placeholder="Create a password"
                       autoComplete="new-password"
                       disabled={isLoading}
+                      data-testid="signup-password-input"
                       {...field}
                     />
                   </FormControl>
@@ -103,6 +105,7 @@ export function SignupForm() {
                       placeholder="Confirm your password"
                       autoComplete="new-password"
                       disabled={isLoading}
+                      data-testid="signup-confirm-password-input"
                       {...field}
                     />
                   </FormControl>
@@ -121,6 +124,7 @@ export function SignupForm() {
                       checked={field.value}
                       onCheckedChange={field.onChange}
                       disabled={isLoading}
+                      data-testid="signup-remember-me-checkbox"
                     />
                   </FormControl>
                   <div className="space-y-1 leading-none">
@@ -132,7 +136,7 @@ export function SignupForm() {
               )}
             />
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full" disabled={isLoading} data-testid="signup-submit-btn">
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Create account
             </Button>
