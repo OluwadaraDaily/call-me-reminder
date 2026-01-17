@@ -113,6 +113,18 @@ export default function DashboardPage() {
       toast.success('Reminder deleted successfully!');
       setIsDeleteDialogOpen(false);
       setSelectedReminder(null);
+
+      // Check if we need to navigate back to a previous page
+      // After deletion, if we're on a page that will be empty, go to the previous page
+      const remainingItems = filteredTotalCount - 1;
+      const maxPage = Math.ceil(remainingItems / pageSize);
+
+      if (currentPage > maxPage && maxPage > 0) {
+        setCurrentPage(maxPage);
+      } else if (remainingItems === 0) {
+        // If no items left after deletion, reset to page 1
+        setCurrentPage(1);
+      }
     } catch (error) {
       toast.error('Failed to delete reminder. Please try again.');
     }
@@ -165,7 +177,7 @@ export default function DashboardPage() {
           <h1 className="text-3xl font-bold tracking-tight text-black">Dashboard</h1>
           <p className="mt-2 text-gray-600">Welcome back, {user?.email}</p>
         </div>
-        <Button size="lg" className="bg-black hover:bg-gray-800" onClick={() => setIsModalOpen(true)}>
+        <Button size="lg" className="bg-black hover:bg-gray-800" onClick={() => setIsModalOpen(true)} data-testid="new-reminder-btn">
           <Plus className="mr-2 h-5 w-5" />
           New Reminder
         </Button>
@@ -207,7 +219,7 @@ export default function DashboardPage() {
       </div>
 
       {!hasAnyReminders ? (
-        <Card className="border-dashed border-2">
+        <Card className="border-dashed border-2" data-testid="empty-state">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gray-100">
               <Calendar className="h-10 w-10 text-black" />
@@ -218,7 +230,7 @@ export default function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center pb-8">
-            <Button size="lg" className="bg-black hover:bg-gray-800" onClick={() => setIsModalOpen(true)}>
+            <Button size="lg" className="bg-black hover:bg-gray-800" onClick={() => setIsModalOpen(true)} data-testid="empty-state-create-btn">
               <Plus className="mr-2 h-5 w-5" />
               Create Your First Reminder
             </Button>
@@ -239,23 +251,24 @@ export default function DashboardPage() {
                   value={searchQuery}
                   onChange={handleSearchChange}
                   className="pl-9"
+                  data-testid="search-input"
                 />
               </div>
             </div>
           </div>
 
           {/* Filter Tabs */}
-          <Tabs value={statusFilter} onValueChange={handleStatusFilterChange}>
+          <Tabs value={statusFilter} onValueChange={handleStatusFilterChange} data-testid="status-filter-tabs">
             <TabsList>
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="scheduled">Scheduled</TabsTrigger>
-              <TabsTrigger value="completed">Completed</TabsTrigger>
-              <TabsTrigger value="failed">Failed</TabsTrigger>
+              <TabsTrigger value="all" data-testid="filter-tab-all">All</TabsTrigger>
+              <TabsTrigger value="scheduled" data-testid="filter-tab-scheduled">Scheduled</TabsTrigger>
+              <TabsTrigger value="completed" data-testid="filter-tab-completed">Completed</TabsTrigger>
+              <TabsTrigger value="failed" data-testid="filter-tab-failed">Failed</TabsTrigger>
             </TabsList>
           </Tabs>
 
           {filteredTotalCount === 0 ? (
-            <Card>
+            <Card data-testid="no-filtered-reminders">
               <CardContent className="py-12 text-center">
                 <p className="text-gray-500">
                   {hasActiveFilters

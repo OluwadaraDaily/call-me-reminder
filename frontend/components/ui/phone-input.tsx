@@ -35,6 +35,7 @@ const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
             // Valid state styles
             isValid && value && 'border-green-500 ring-green-500/20 ring-[3px]',
           ),
+          'data-testid': 'reminder-phone-input',
           ...props,
         }}
       />

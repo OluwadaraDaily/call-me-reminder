@@ -5,7 +5,7 @@ from app.config import settings
 
 # Create SQLAlchemy engine
 engine = create_engine(
-    settings.DATABASE_URL,
+    settings.database_url,  # Use property that checks environment
     connect_args={"check_same_thread": False},  # Needed for SQLite
     echo=settings.DEBUG,  # Log SQL queries in debug mode
     future=True  # Use SQLAlchemy 2.0 style

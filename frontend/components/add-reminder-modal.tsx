@@ -56,10 +56,11 @@ export function AddReminderModal({ open, onOpenChange, onSubmit }: AddReminderMo
                 variant="outline"
                 onClick={handleCancel}
                 disabled={isSubmitting}
+                data-testid="create-reminder-cancel-btn"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting} data-testid="create-reminder-submit-btn">
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isSubmitting ? 'Creating...' : 'Create Reminder'}
               </Button>

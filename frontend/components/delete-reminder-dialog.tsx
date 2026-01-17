@@ -45,7 +45,7 @@ export function DeleteReminderDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={isDeleting} data-testid="delete-reminder-cancel-btn">Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={async (e) => {
               e.preventDefault();
@@ -53,6 +53,7 @@ export function DeleteReminderDialog({
             }}
             disabled={isDeleting}
             className="bg-red-600 hover:bg-red-700"
+            data-testid="delete-reminder-confirm-btn"
           >
             {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isDeleting ? 'Deleting...' : 'Delete'}

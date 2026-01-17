@@ -112,6 +112,7 @@ const createColumns = ({ onEdit, onDelete }: ColumnsProps): ColumnDef<Reminder>[
             size="sm"
             onClick={() => onEdit(reminder)}
             className="h-8 w-8 p-0"
+            data-testid={`edit-reminder-btn-${reminder.id}`}
           >
             <Pencil className="h-4 w-4" />
           </Button>
@@ -120,6 +121,7 @@ const createColumns = ({ onEdit, onDelete }: ColumnsProps): ColumnDef<Reminder>[
             size="sm"
             onClick={() => onDelete(reminder)}
             className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+            data-testid={`delete-reminder-btn-${reminder.id}`}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -219,7 +221,7 @@ export function RemindersTable({
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id}>
+              <TableRow key={row.id} data-testid={`reminder-row-${row.original.id}`}>
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -247,15 +249,15 @@ export function RemindersTable({
                 Rows per page
               </label>
               <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
-                <SelectTrigger id="page-size" className="h-8 w-[70px]">
+                <SelectTrigger id="page-size" className="h-8 w-[70px]" data-testid="page-size-select">
                   <SelectValue placeholder={String(pageSize)} />
                 </SelectTrigger>
                 <SelectContent side="top">
-                  <SelectItem value="5">5</SelectItem>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="20">20</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
+                  <SelectItem value="5" data-testid="page-size-option-5">5</SelectItem>
+                  <SelectItem value="10" data-testid="page-size-option-10">10</SelectItem>
+                  <SelectItem value="20" data-testid="page-size-option-20">20</SelectItem>
+                  <SelectItem value="50" data-testid="page-size-option-50">50</SelectItem>
+                  <SelectItem value="100" data-testid="page-size-option-100">100</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -267,10 +269,11 @@ export function RemindersTable({
                 onClick={handlePreviousPage}
                 disabled={currentPage <= 1}
                 className="h-8 w-8 p-0"
+                data-testid="pagination-prev-btn"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <div className="text-sm text-gray-700">
+              <div className="text-sm text-gray-700" data-testid="pagination-info">
                 Page <span className="font-medium">{currentPage}</span> of{' '}
                 <span className="font-medium">{totalPages}</span>
               </div>
@@ -280,6 +283,7 @@ export function RemindersTable({
                 onClick={handleNextPage}
                 disabled={currentPage >= totalPages}
                 className="h-8 w-8 p-0"
+                data-testid="pagination-next-btn"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>

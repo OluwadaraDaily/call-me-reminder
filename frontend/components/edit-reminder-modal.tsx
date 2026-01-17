@@ -62,10 +62,11 @@ export function EditReminderModal({ open, onOpenChange, reminder, onSubmit }: Ed
                 variant="outline"
                 onClick={handleCancel}
                 disabled={isSubmitting}
+                data-testid="edit-reminder-cancel-btn"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting} data-testid="edit-reminder-submit-btn">
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isSubmitting ? 'Updating...' : 'Update Reminder'}
               </Button>

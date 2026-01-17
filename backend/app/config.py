@@ -12,6 +12,7 @@ class Settings(BaseSettings):
 
     # Database
     DATABASE_URL: str = "sqlite:///./data/app.db"
+    TEST_DATABASE_URL: str = "sqlite:///./data/app_test.db"
 
     # API
     API_V1_PREFIX: str = "/api/v1"
@@ -52,6 +53,18 @@ class Settings(BaseSettings):
     def is_development(self) -> bool:
         """Check if the application is running in development mode."""
         return self.ENVIRONMENT == "development"
+
+    @property
+    def is_testing(self) -> bool:
+        """Check if the application is running in test mode."""
+        return self.ENVIRONMENT == "testing"
+
+    @property
+    def database_url(self) -> str:
+        """Get the appropriate database URL based on environment."""
+        if self.is_testing:
+            return self.TEST_DATABASE_URL
+        return self.DATABASE_URL
 
 
 # Singleton pattern for settings

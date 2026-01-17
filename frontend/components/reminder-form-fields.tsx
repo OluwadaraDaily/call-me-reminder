@@ -38,7 +38,7 @@ export function ReminderFormFields({ form, defaultCountry, mode = 'create' }: Re
           <FormItem>
             <FormLabel>Title</FormLabel>
             <FormControl>
-              <Input placeholder="Meeting with John" {...field} />
+              <Input placeholder="Meeting with John" {...field} data-testid="reminder-title-input" />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -57,6 +57,7 @@ export function ReminderFormFields({ form, defaultCountry, mode = 'create' }: Re
                 className="resize-none"
                 rows={3}
                 {...field}
+                data-testid="reminder-message-input"
               />
             </FormControl>
             <FormDescription>
@@ -117,6 +118,7 @@ export function ReminderFormFields({ form, defaultCountry, mode = 'create' }: Re
                 type="datetime-local"
                 min={getMinDateTime()}
                 {...field}
+                data-testid="reminder-datetime-input"
               />
             </FormControl>
             <FormMessage />
@@ -132,13 +134,13 @@ export function ReminderFormFields({ form, defaultCountry, mode = 'create' }: Re
             <FormLabel>Timezone</FormLabel>
             <Select onValueChange={field.onChange} value={field.value}>
               <FormControl>
-                <SelectTrigger>
+                <SelectTrigger data-testid="reminder-timezone-select">
                   <SelectValue placeholder="Select your timezone" />
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
                 {TIMEZONE_OPTIONS.map((tz) => (
-                  <SelectItem key={tz.value} value={tz.value}>
+                  <SelectItem key={tz.value} data-value={tz.value} value={tz.value}>
                     {tz.label}
                   </SelectItem>
                 ))}
