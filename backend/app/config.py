@@ -33,6 +33,11 @@ class Settings(BaseSettings):
     # Scheduler Configuration
     SCHEDULER_POLL_INTERVAL_SECONDS: int = 60
     SCHEDULER_TIMEZONE: str = "UTC"
+    SCHEDULER_BATCH_SIZE: int = 10  # Max reminders to process per poll
+
+    # Retry Configuration
+    RETRY_MAX_ATTEMPTS: int = 3
+    RETRY_BASE_DELAY_SECONDS: int = 60  # Base delay for exponential backoff
 
     # Email Configuration (for password resets)
     EMAIL_FROM: str = "noreply@callmereminder.com"

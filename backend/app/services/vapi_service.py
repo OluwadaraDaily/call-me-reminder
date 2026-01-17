@@ -16,7 +16,8 @@ class VapiService:
         self,
         phone_number: str,
         reminder_title: str,
-        reminder_message: str
+        reminder_message: str,
+        idempotency_key: str | None = None
     ) -> dict:
         """
         Initiate outbound call with reminder message.
@@ -25,18 +26,19 @@ class VapiService:
             phone_number: Customer phone number in E.164 format (+1234567890)
             reminder_title: Title of the reminder
             reminder_message: Full reminder message to speak
+            idempotency_key: Unique key to prevent duplicate calls
 
         Returns:
             dict: {"success": bool, "call_id": str, "error": str}
         """
         try:
-            # Create transient assistant for this call
-            response = self.client.calls.create(
-                phone_number_id=self.phone_number_id,
-                customer={
+            # Build call parameters
+            call_params = {
+                "phone_number_id": self.phone_number_id,
+                "customer": {
                     "number": phone_number
                 },
-                assistant={
+                "assistant": {
                     "firstMessage": f"Hello! This is your reminder about {reminder_title}. {reminder_message}",
                     "model": {
                         "provider": "openai",
@@ -52,7 +54,15 @@ class VapiService:
                     },
                     "endCallMessage": "Goodbye! Have a great day."
                 }
-            )
+            }
+
+            # Add idempotency key to metadata if provided
+            if idempotency_key:
+                call_params["metadata"] = {"idempotency_key": idempotency_key}
+                logger.info(f"Making Vapi call with idempotency_key={idempotency_key}")
+
+            # Create transient assistant for this call
+            response = self.client.calls.create(**call_params)
 
             logger.info(f"Vapi call created: {response.id}")
             return {"success": True, "call_id": response.id}

@@ -1,17 +1,20 @@
-from sqlalchemy import String, Text, DateTime, ForeignKey
+from sqlalchemy import String, Text, DateTime, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import enum
 import re
+import uuid
 from app.models.base import BaseModel
 
 
 class ReminderStatus(str, enum.Enum):
     """Enum for reminder status."""
     SCHEDULED = "scheduled"
+    PROCESSING = "processing"
     COMPLETED = "completed"
     FAILED = "failed"
+    PENDING_RETRY = "pending_retry"
 
 
 class Reminder(BaseModel):
@@ -40,8 +43,31 @@ class Reminder(BaseModel):
     status: Mapped[str] = mapped_column(
         String(20),
         default=ReminderStatus.SCHEDULED.value,
-        nullable=False
+        nullable=False,
+        index=True
     )
+
+    # Retry tracking fields
+    attempt_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    max_attempts: Mapped[int] = mapped_column(Integer, default=3, nullable=False)
+    next_retry_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Idempotency tracking
+    idempotency_key: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True, index=True)
+    vapi_call_id: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+
+    def generate_idempotency_key(self) -> str:
+        """Generate a unique idempotency key for this reminder attempt."""
+        key = f"{self.id}-{self.attempt_count}-{uuid.uuid4().hex[:8]}"
+        self.idempotency_key = key
+        return key
+
+    def calculate_next_retry(self, base_delay_seconds: int = 60) -> datetime:
+        """Calculate next retry time using exponential backoff."""
+        delay = base_delay_seconds * (2 ** self.attempt_count)
+        self.next_retry_at = datetime.utcnow() + timedelta(seconds=delay)
+        return self.next_retry_at
 
     # Relationship
     user: Mapped["User"] = relationship("User", back_populates="reminders")
