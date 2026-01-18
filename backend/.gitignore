@@ -42,6 +42,7 @@ env/
 .env
 .env.local
 .env.*.local
+.env.production
 
 # FastAPI / Uvicorn
 *.log

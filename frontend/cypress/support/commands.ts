@@ -137,7 +137,6 @@ Cypress.Commands.add('createReminderAPI', (data: ReminderCreate) => {
       'Origin': 'http://localhost:3001',
     },
     body: data,
-    withCredentials: true,
   }).then((response) => {
     expect(response.status).to.eq(201);
     return response.body.id;
