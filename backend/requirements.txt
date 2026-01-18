@@ -44,6 +44,7 @@ watchfiles==1.1.1
 websockets==15.0.1
 # Database dependencies
 sqlalchemy==2.0.36
+psycopg2-binary==2.9.10
 alembic==1.14.0
 greenlet==3.1.1
 # JWT Authentication
