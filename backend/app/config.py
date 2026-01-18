@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     # Retry Configuration
     RETRY_MAX_ATTEMPTS: int = 3
     RETRY_BASE_DELAY_SECONDS: int = 60  # Base delay for exponential backoff
+    STUCK_PROCESSING_TIMEOUT_MINUTES: int = 5  # Reset stuck reminders after this duration
 
     # Email Configuration (for password resets)
     EMAIL_FROM: str = "noreply@callmereminder.com"

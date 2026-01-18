@@ -142,6 +142,54 @@ def handle_reminder_failure(reminder: Reminder, error: str) -> None:
         )
 
 
+def reset_stuck_reminders() -> int:
+    """
+    Reset reminders that have been stuck in PROCESSING state for too long.
+    This handles cases where a server crashes mid-processing.
+    Returns the number of reminders reset.
+    """
+    db = SessionLocal()
+
+    try:
+        timeout_threshold = datetime.now(tz.utc) - timedelta(
+            minutes=settings.STUCK_PROCESSING_TIMEOUT_MINUTES
+        )
+
+        # Find and reset stuck reminders
+        stmt = (
+            update(Reminder)
+            .where(
+                and_(
+                    Reminder.status == ReminderStatus.PROCESSING.value,
+                    Reminder.updated_at < timeout_threshold
+                )
+            )
+            .values(status=ReminderStatus.PENDING_RETRY.value)
+        )
+
+        result = db.execute(stmt)
+        reset_count = result.rowcount
+        db.commit()
+
+        if reset_count > 0:
+            logger.warning(
+                f"Reset {reset_count} stuck reminders from PROCESSING to PENDING_RETRY "
+                f"(stuck for >{settings.STUCK_PROCESSING_TIMEOUT_MINUTES} minutes)"
+            )
+
+        return reset_count
+
+    except OperationalError as e:
+        logger.error(f"Database error in reset_stuck_reminders: {e}")
+        db.rollback()
+        return 0
+    except Exception as e:
+        logger.error(f"Error in reset_stuck_reminders: {e}")
+        return 0
+    finally:
+        db.close()
+
+
 def process_due_reminders():
     """
     Poll database for due reminders and trigger Vapi calls.
@@ -190,11 +238,19 @@ def process_due_reminders():
         db.close()
 
 
-# Register job with scheduler
+# Register jobs with scheduler
 scheduler.add_job(
     func=process_due_reminders,
     trigger=IntervalTrigger(seconds=settings.SCHEDULER_POLL_INTERVAL_SECONDS),
     id="process_due_reminders",
     name="Process due reminders and make Vapi calls",
+    replace_existing=True
+)
+
+scheduler.add_job(
+    func=reset_stuck_reminders,
+    trigger=IntervalTrigger(minutes=settings.STUCK_PROCESSING_TIMEOUT_MINUTES),
+    id="reset_stuck_reminders",
+    name="Reset reminders stuck in PROCESSING state",
     replace_existing=True
 )
