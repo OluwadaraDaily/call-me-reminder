@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { SignupForm } from '@/components/signup-form';
 import { useAuth } from '@/hooks/useAuth';
 
-export default function SignupPage() {
+function SignupPageContent() {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -19,4 +19,12 @@ export default function SignupPage() {
   }, [isAuthenticated, isLoading, router, searchParams]);
 
   return <SignupForm />;
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<SignupForm />}>
+      <SignupPageContent />
+    </Suspense>
+  );
 }
