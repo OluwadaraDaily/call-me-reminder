@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     # CORS
     CORS_ORIGINS: list[str] = ["http://localhost:3000"]
 
+    # Cookie Settings
+    # Set to parent domain for cross-subdomain cookies (e.g., ".example.com")
+    # Leave empty for same-domain setups
+    COOKIE_DOMAIN: str = ""
+
     # JWT Settings
     SECRET_KEY: str = "your-secret-key-change-in-production"
     ALGORITHM: str = "HS256"

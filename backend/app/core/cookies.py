@@ -1,27 +1,36 @@
 from fastapi import Response
 from app.config import settings
 
+# Determine SameSite policy based on environment and cookie domain
+# For cross-subdomain setups (different frontend/backend subdomains), use "none"
+# For same-domain setups, use "lax" for better security
+_is_cross_origin = bool(settings.COOKIE_DOMAIN)
+_samesite_policy = "none" if _is_cross_origin else "lax"
+
+# Build base cookie config
+_base_config = {
+    "httponly": True,
+    "secure": settings.ENVIRONMENT == "production",
+    "samesite": _samesite_policy,
+    "path": "/",
+}
+
+# Add domain only if configured (for cross-subdomain setups)
+if settings.COOKIE_DOMAIN:
+    _base_config["domain"] = settings.COOKIE_DOMAIN
+
 COOKIE_CONFIG = {
     "access_token": {
+        **_base_config,
         "max_age": 30 * 60,  # 30 minutes in seconds
-        "httponly": True,
-        "secure": settings.ENVIRONMENT == "production",
-        "samesite": "lax",
-        "path": "/",
     },
     "refresh_token": {
+        **_base_config,
         "max_age": 7 * 24 * 60 * 60,  # 7 days in seconds
-        "httponly": True,
-        "secure": settings.ENVIRONMENT == "production",
-        "samesite": "lax",
-        "path": "/",
     },
     "refresh_token_session": {
+        **_base_config,
         "max_age": None,  # Session cookie (expires when browser closes)
-        "httponly": True,
-        "secure": settings.ENVIRONMENT == "production",
-        "samesite": "lax",
-        "path": "/",
     }
 }
 
@@ -67,19 +76,15 @@ def clear_auth_cookies(response: Response):
     Args:
         response: FastAPI Response object
     """
-    response.set_cookie(
-        key="access_token",
-        value="",
-        max_age=0,
-        httponly=True,
-        samesite="lax",
-        path="/"
-    )
-    response.set_cookie(
-        key="refresh_token",
-        value="",
-        max_age=0,
-        httponly=True,
-        samesite="lax",
-        path="/"
-    )
+    # Build clear config with same domain/samesite settings
+    clear_config = {
+        "max_age": 0,
+        "httponly": True,
+        "samesite": _samesite_policy,
+        "path": "/",
+    }
+    if settings.COOKIE_DOMAIN:
+        clear_config["domain"] = settings.COOKIE_DOMAIN
+
+    response.set_cookie(key="access_token", value="", **clear_config)
+    response.set_cookie(key="refresh_token", value="", **clear_config)
